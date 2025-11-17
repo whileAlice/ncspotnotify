@@ -6,6 +6,7 @@
 #include "context.h"
 #include "mutex.h"
 
+// TODO: maybe a way to just deinit stuff after an error
 void
 handle_error(Context* ctx, const char* fmt, ...)
 {
