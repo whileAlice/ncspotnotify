@@ -12,75 +12,65 @@
 PlayerMessage*
 json_to_player_message(Context* ctx, char* json_string)
 {
-  PlayerMessage* pm           = calloc(1, sizeof(PlayerMessage));
-  JsonNode*      json_message = json_parse(ctx, json_string);
+  PlayerMessage* pm = calloc(1, sizeof(PlayerMessage));
 
-  assert(json_message->type == OBJECT);
+  JsonNode* json = json_parse(ctx, json_string);
+  assert(json->type == OBJECT);
 
-  JsonMember* mode = &json_message->data.object_children[0];
-  assert(strcmp(mode->key, "mode") == 0);
+  auto* json_mode = get_child(json, 0, "mode");
+  parse_player_mode(ctx, &pm->mode, json_mode);
 
-  JsonMember* state = get_child(mode, 0);
-  JsonMember* secs  = get_child(state, 0);
-  JsonMember* nanos = get_child(state, 1);
+  auto* json_playable = get_child(json, 1, "playable");
+  parse_player_playable(ctx, &pm->playable, json_playable);
+
+  free_json_node(json);
+
+  return pm;
+}
+
+void
+parse_player_mode(Context* ctx, PlayerMode* m, JsonMember* json_mode)
+{
+  auto* state = get_child(json_mode->value, 0, NULL);
 
   if        (strcmp(state->key, "Paused") == 0) {
-    pm->mode.state = PAUSED;
-
-    assert(strcmp(secs->key,  "secs") == 0);
-    assert(strcmp(nanos->key, "nanos") == 0);
-
-    pm->mode.secs  = (uint32_t)secs-> value->data.number;
-    pm->mode.nanos = (uint32_t)nanos->value->data.number;
+    m->state = PAUSED;
+    m->secs  = get_child_uint32_t(ctx, state, 0, "secs");
+    m->nanos = get_child_uint32_t(ctx, state, 1, "nanos");
   } else if (strcmp(state->key, "Stopped") == 0) {
-    pm->mode.state = STOPPED;
+    m->state = STOPPED;
   } else if (strcmp(state->key, "Playing") == 0) {
-    pm->mode.state = PLAYING;
-
-    assert(strcmp(secs->key,  "secs_since_epoch"));
-    assert(strcmp(nanos->key, "nanos_since_epoch"));
-
-    pm->mode.secs_since_epoch  = (uint32_t)secs-> value->data.number;
-    pm->mode.nanos_since_epoch = (uint32_t)nanos->value->data.number;
+    m->state = PLAYING;
+    m->secs_since_epoch  = get_child_uint32_t(ctx, state, 0, "secs_since_epoch");
+    m->nanos_since_epoch = get_child_uint32_t(ctx, state, 1, "nanos_since_epoch");
   } else {
     handle_error(ctx, "json_to_player_message: unknown mode state: %s\n", state);
   }
+}
 
-  JsonMember* playable = &json_message->data.object_children[1];
-  assert(strcmp(playable->key, "playable") == 0);
+void
+parse_player_playable(Context* ctx, PlayerPlayable* p, JsonMember* json_playable)
+{
+  auto* jp = json_playable;
 
-  JsonMember* type = get_child(playable, 0);
-  assert(strcmp(type->key, "type") == 0);
-
-  if (strcmp(type->value->data.string, "Track") == 0) {
-    pm->playable.type = TRACK;
-  } else {
-    handle_error(ctx, "json_to_player_message: unknown playable type: %s\n", state);
-  }
-
-  auto* p = &pm->playable;
-
-  p->id            = get_child_string      (ctx, playable, 1,  "id");
-  p->uri           = get_child_string      (ctx, playable, 2,  "uri");
-  p->title         = get_child_string      (ctx, playable, 3,  "title");
-  p->track_number  = get_child_uint8_t     (ctx, playable, 4,  "track_number");
-  p->disc_number   = get_child_uint8_t     (ctx, playable, 5,  "disc_number");
-  p->duration      = get_child_uint32_t    (ctx, playable, 6,  "duration");
-  p->artists       = get_child_string_array(ctx, playable, 7,  "artists");
-  p->artist_ids    = get_child_string_array(ctx, playable, 8,  "artist_ids");
-  p->album         = get_child_string      (ctx, playable, 9,  "album");
-  p->album_id      = get_child_string      (ctx, playable, 10, "album_id");
-  p->album_artists = get_child_string_array(ctx, playable, 11, "album_artists");
-  p->cover_url     = get_child_string      (ctx, playable, 12, "cover_url");
-  p->url           = get_child_string      (ctx, playable, 13, "url");
-  p->added_at      = get_child_string      (ctx, playable, 14, "added_at");
-  p->list_index    = get_child_uint8_t     (ctx, playable, 15, "list_index");
-  p->is_local      = get_child_boolean     (ctx, playable, 16, "is_local");
-  p->is_playable   = get_child_boolean     (ctx, playable, 17, "is_playable");
-
-  free_json_node(json_message);
-
-  return pm;
+  p->type          = get_child_playable_type(ctx, jp, 0,  "type");
+  p->id            = get_child_string       (ctx, jp, 1,  "id");
+  p->uri           = get_child_string       (ctx, jp, 2,  "uri");
+  p->title         = get_child_string       (ctx, jp, 3,  "title");
+  p->track_number  = get_child_uint8_t      (ctx, jp, 4,  "track_number");
+  p->disc_number   = get_child_uint8_t      (ctx, jp, 5,  "disc_number");
+  p->duration      = get_child_uint32_t     (ctx, jp, 6,  "duration");
+  p->artists       = get_child_string_array (ctx, jp, 7,  "artists");
+  p->artist_ids    = get_child_string_array (ctx, jp, 8,  "artist_ids");
+  p->album         = get_child_string       (ctx, jp, 9,  "album");
+  p->album_id      = get_child_string       (ctx, jp, 10, "album_id");
+  p->album_artists = get_child_string_array (ctx, jp, 11, "album_artists");
+  p->cover_url     = get_child_string       (ctx, jp, 12, "cover_url");
+  p->url           = get_child_string       (ctx, jp, 13, "url");
+  p->added_at      = get_child_string       (ctx, jp, 14, "added_at");
+  p->list_index    = get_child_uint8_t      (ctx, jp, 15, "list_index");
+  p->is_local      = get_child_boolean      (ctx, jp, 16, "is_local");
+  p->is_playable   = get_child_boolean      (ctx, jp, 17, "is_playable");
 }
 
 void
@@ -104,17 +94,21 @@ free_player_message(PlayerMessage* pm)
 }
 
 JsonMember*
-get_child(JsonMember* parent, size_t index)
+get_child(JsonNode* parent, size_t index, const char* name)
 {
-  return &parent->value->data.object_children[index];
+  JsonMember* m = &parent->data.object_children[index];
+  if (name != NULL) {
+    assert(strcmp(m->key, name) == 0);
+  }
+
+  return m;
 }
 
 char*
 get_child_string(Context* ctx, JsonMember* parent,
                  size_t index, const char* name)
 {
-  JsonMember* source_member = get_child(parent, index);
-  assert(strcmp(source_member->key, name) == 0);
+  JsonMember* source_member = get_child(parent->value, index, name);
 
   char* string = strndup(source_member->value->data.string,
                          strlen(source_member->value->data.string));
@@ -129,8 +123,7 @@ double
 get_child_number(Context* ctx, JsonMember* parent,
                  size_t index, const char* name)
 {
-  JsonMember* source_member = get_child(parent, index);
-  assert(strcmp(source_member->key, name) == 0);
+  JsonMember* source_member = get_child(parent->value, index, name);
 
   return source_member->value->data.number;
 }
@@ -153,8 +146,7 @@ bool
 get_child_boolean(Context* ctx, JsonMember* parent,
                   size_t index, const char* name)
 {
-  JsonMember* source_member = get_child(parent, index);
-  assert(strcmp(source_member->key, name) == 0);
+  JsonMember* source_member = get_child(parent->value, index, name);
 
   return source_member->value->data.boolean;
 }
@@ -163,7 +155,7 @@ StringArray
 get_child_string_array(Context* ctx, JsonMember* parent,
                        size_t index, const char* name)
 {
-  JsonMember* source_member = get_child(parent, index);
+  JsonMember* source_member = get_child(parent->value, index, name);
   assert(strcmp(source_member->key, name) == 0);
 
   size_t count = source_member->value->children_count;
@@ -178,10 +170,11 @@ get_child_string_array(Context* ctx, JsonMember* parent,
   };
 
   for (size_t i = 0; i < count; ++i) {
-    char* source_string = source_member->value->data.array_children[i]->data.string;
+    char* source_string =
+      source_member->value->data.array_children[i]->data.string;
     char* target_string = strndup(source_string, strlen(source_string));
     if (target_string == NULL) {
-      handle_error(ctx, "get_member_child_string strndup");
+      handle_error(ctx, "get_child_string_array strndup");
     }
 
     array.data[i] = target_string;
@@ -189,6 +182,22 @@ get_child_string_array(Context* ctx, JsonMember* parent,
   }
 
   return array;
+}
+
+PlayableType
+get_child_playable_type(Context* ctx, JsonMember* parent,
+                        size_t index, const char* name)
+{
+  JsonMember* source_member = get_child(parent->value, index, name);
+
+  char* string = source_member->value->data.string;
+  if (strcmp(string, "Track") == 0 ){
+    return TRACK;
+  }
+
+  handle_error(ctx, "get_child_playable_type: unknown type: %s\n", string);
+
+  return UNKNOWN_PLAYABLE_TYPE;
 }
 
 void
