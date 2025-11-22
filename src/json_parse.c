@@ -321,3 +321,34 @@ skip_whitespace(char** str)
 {
   while (isspace(**str)) *str += 1;
 }
+
+void
+json_free_node(JsonNode* node)
+{
+  switch (node->type) {
+  case STRING:
+    free(node->data.string);
+    break;
+  case OBJECT:
+    for (size_t i = 0; i < node->children_count; ++i) {
+      free(node->data.object_children[i].key);
+      json_free_node(node->data.object_children[i].value);
+    }
+
+    free(node->data.object_children);
+
+    break;
+  case ARRAY:
+    for (size_t i = 0; i < node->children_count; ++i) {
+      json_free_node(node->data.array_children[i]);
+    }
+
+    free(node->data.array_children);
+
+    break;
+  case NUMBER:
+  case BOOLEAN:
+  case JSON_NULL:
+  default:
+  }
+}

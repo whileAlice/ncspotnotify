@@ -45,6 +45,7 @@ main(void)
       printf("%s\n", ctx->socket_message);
       JsonNode* message = json_parse(ctx, ctx->socket_message);
       json_print(message);
+      json_free_node(message);
 
       MUTEX(&ctx->lock, { ctx->is_socket_message_ready = false; });
     }

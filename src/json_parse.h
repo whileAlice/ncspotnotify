@@ -32,15 +32,15 @@ struct json_node {
   } data;
 };
 
-JsonNode* json_parse         (Context* ctx, char* json_string);
-JsonNode* json_parse_value   (Context* ctx, char** json_pos);
-JsonNode* json_parse_string  (Context* ctx, char** json_pos);
-JsonNode* json_parse_number  (Context* ctx, char** json_pos);
-JsonNode* json_parse_boolean (Context* ctx, char** json_pos);
-JsonNode* json_parse_null    (Context* ctx, char** json_pos);
-JsonNode* json_parse_object  (Context* ctx, char** json_pos);
-JsonNode* json_parse_array   (Context* ctx, char** json_pos);
-
-char*       parse_string       (Context* ctx, char** str);
-JsonType    char_to_json_type  (Context* ctx, char ch);
-void        skip_whitespace    (char** str);
+JsonNode* json_parse        (Context* ctx, char* json_string);
+JsonNode* json_parse_value  (Context* ctx, char** json_pos);
+JsonNode* json_parse_string (Context* ctx, char** json_pos);
+JsonNode* json_parse_number (Context* ctx, char** json_pos);
+JsonNode* json_parse_boolean(Context* ctx, char** json_pos);
+JsonNode* json_parse_null   (Context* ctx, char** json_pos);
+JsonNode* json_parse_object (Context* ctx, char** json_pos);
+JsonNode* json_parse_array  (Context* ctx, char** json_pos);
+char*     parse_string      (Context* ctx, char** str);
+JsonType  char_to_json_type (Context* ctx, char ch);
+void      skip_whitespace   (char** str);
+void      json_free_node    (JsonNode* node);
