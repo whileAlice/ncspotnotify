@@ -96,6 +96,8 @@ free_player_message(PlayerMessage* pm)
 JsonMember*
 get_child(JsonNode* parent, size_t index, const char* name)
 {
+  assert(parent->type == OBJECT);
+
   JsonMember* m = &parent->data.object_children[index];
   if (name != NULL) {
     assert(strcmp(m->key, name) == 0);
@@ -110,11 +112,8 @@ get_child_string(Context* ctx, JsonMember* parent,
 {
   JsonMember* source_member = get_child(parent->value, index, name);
 
-  char* string = strndup(source_member->value->data.string,
-                         strlen(source_member->value->data.string));
-  if (string == NULL) {
-    handle_error(ctx, "get_child_string strndup");
-  }
+  char* string = source_member->value->data.string;
+  source_member->value->data.string = NULL;
 
   return string;
 }
@@ -170,15 +169,12 @@ get_child_string_array(Context* ctx, JsonMember* parent,
   };
 
   for (size_t i = 0; i < count; ++i) {
-    char* source_string =
-      source_member->value->data.array_children[i]->data.string;
-    char* target_string = strndup(source_string, strlen(source_string));
-    if (target_string == NULL) {
-      handle_error(ctx, "get_child_string_array strndup");
-    }
+    auto* source_child = source_member->value->data.array_children[i];
 
-    array.data[i] = target_string;
+    array.data[i] = source_child->data.string;
     array.count  += 1;
+
+    source_child->data.string = NULL;
   }
 
   return array;
