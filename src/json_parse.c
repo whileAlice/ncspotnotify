@@ -7,19 +7,10 @@
 #include <assert.h>
 
 #include "json_parse.h"
+#include "json_print.h"
 #include "context.h"
 
 #define BUFFER_SIZE 1024
-
-const char* JSON_TYPE_STRINGS[] = {
-    "String",
-    "Number",
-    "Boolean",
-    "Null",
-    "Object",
-    "Array",
-    "Unknown",
-};
 
 JsonNode*
 json_parse(Context* ctx, char* json_string)
@@ -323,16 +314,6 @@ char_to_json_type(Context* ctx, char ch)
   }
 
   return UNKNOWN;
-}
-
-const char*
-json_type_to_string(JsonType type)
-{
-  if (type >= 0 && type <= UNKNOWN) {
-    return JSON_TYPE_STRINGS[type];
-  }
-
-  return "UnknownJsonType";
 }
 
 void
