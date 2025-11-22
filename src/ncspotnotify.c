@@ -6,9 +6,12 @@
 #include "context.h"
 #include "debug.h"
 #include "error.h"
+#include "json_parse.h"
 #include "mutex.h"
 #include "socket_reader.h"
 #include "usleep.h"
+
+char* json = "{\"abc\":{\"bcd\":[1,2,3],\"cde\":true}}";
 
 int
 main(void)
@@ -18,6 +21,12 @@ main(void)
     perror("calloc (ctx)");
     exit(EXIT_FAILURE);
   }
+
+  JsonNode* node = json_parse(ctx, json);
+
+  printf("%d\n", node->data.object_children[0].value->data.object_children[1].value->data.boolean);
+
+  exit(0);
 
   if (pipe(ctx->debug_pipe_fds) == -1) {
     handle_error(ctx, "pipe");
@@ -39,9 +48,9 @@ main(void)
   }
 
   while (!ctx->should_quit_app) {
-    if (ctx->is_message_ready) {
-      printf("%s\n", ctx->message);
-      MUTEX(&ctx->lock, { ctx->is_message_ready = false; });
+    if (ctx->is_socket_message_ready) {
+      printf("%s\n", ctx->socket_message);
+      MUTEX(&ctx->lock, { ctx->is_socket_message_ready = false; });
     }
 
     usleep(100000);

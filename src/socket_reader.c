@@ -7,6 +7,7 @@
 #include <errno.h>
 
 #include "socket_reader.h"
+#include "config.h"
 #include "context.h"
 #include "error.h"
 #include "mutex.h"
@@ -34,7 +35,7 @@ socket_reader_thread(void* args)
   int flags = fcntl(socket_fd, F_GETFL, 0);
   fcntl(socket_fd, F_SETFL, flags | O_NONBLOCK);
 
-  char buf[1024];
+  char buf[SOCKET_BUFFER_SIZE];
   while (!ctx->should_quit_app) {
     ssize_t bytes_read = read(socket_fd, buf, sizeof(buf) - 1);
 
@@ -42,8 +43,8 @@ socket_reader_thread(void* args)
       buf[bytes_read] = '\0';
 
       MUTEX(&ctx->lock, {
-              strcpy(ctx->message, buf);
-              ctx->is_message_ready = true;
+              strcpy(ctx->socket_message, buf);
+              ctx->is_socket_message_ready = true;
             });
     } else if (bytes_read == 0) {
       printf("socket was closed\n");
