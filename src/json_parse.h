@@ -43,4 +43,4 @@ JsonNode* json_parse_array  (Context* ctx, char** json_pos);
 char*     parse_string      (Context* ctx, char** str);
 JsonType  char_to_json_type (Context* ctx, char ch);
 void      skip_whitespace   (char** str);
-void      json_free_node    (JsonNode* node);
+void      free_json_node    (JsonNode* node);

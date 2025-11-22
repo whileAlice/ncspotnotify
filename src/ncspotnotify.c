@@ -6,8 +6,7 @@
 #include "context.h"
 #include "debug.h"
 #include "error.h"
-#include "json_parse.h"
-#include "json_print.h"
+#include "player_message.h"
 #include "mutex.h"
 #include "socket_reader.h"
 #include "usleep.h"
@@ -43,9 +42,9 @@ main(void)
   while (!ctx->should_quit_app) {
     if (ctx->is_socket_message_ready) {
       printf("%s\n", ctx->socket_message);
-      JsonNode* message = json_parse(ctx, ctx->socket_message);
-      json_print(message);
-      json_free_node(message);
+      PlayerMessage* pm = json_to_player_message(ctx, ctx->socket_message);
+      printf("%s - %s\n", pm->playable.artists.data[0], pm->playable.title);
+      free_player_message(pm);
 
       MUTEX(&ctx->lock, { ctx->is_socket_message_ready = false; });
     }
