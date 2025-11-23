@@ -6,6 +6,7 @@
 #include "context.h"
 #include "debug.h"
 #include "error.h"
+#include "notification.h"
 #include "player_message.h"
 #include "mutex.h"
 #include "socket_reader.h"
@@ -43,7 +44,12 @@ main(void)
     if (ctx->is_socket_message_ready) {
       printf("%s\n", ctx->socket_message);
       PlayerMessage* pm = json_to_player_message(ctx, ctx->socket_message);
-      printf("%s - %s\n", pm->playable.artists.data[0], pm->playable.title);
+      Notification* n = player_message_to_notification(pm);
+
+      char* str = notification_to_string(ctx, n);
+      printf("%s\n", str);
+
+      free_notification(n);
       free_player_message(pm);
 
       MUTEX(&ctx->lock, { ctx->is_socket_message_ready = false; });
