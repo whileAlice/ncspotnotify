@@ -17,5 +17,5 @@ typedef struct context {
   Notifications*  notifications;
   char            socket_message[SOCKET_BUFFER_SIZE];
   bool            should_quit_app;
-  bool            has_error;
+  bool            is_verbose;
 } Context;

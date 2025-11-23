@@ -60,7 +60,7 @@ json_parse_string(Context* ctx, char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
-    handle_error(ctx, "json_parse_string node calloc");
+    handle_error("json_parse_string node calloc");
   }
 
   node->type        = STRING;
@@ -74,7 +74,7 @@ json_parse_number(Context* ctx, char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
-    handle_error(ctx, "json_parse_number node calloc");
+    handle_error("json_parse_number node calloc");
   }
 
   char buf[BUFFER_SIZE];
@@ -100,7 +100,7 @@ json_parse_boolean(Context* ctx, char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
-    handle_error(ctx, "json_parse_boolean node calloc");
+    handle_error("json_parse_boolean node calloc");
   }
 
   bool boolean;
@@ -124,7 +124,7 @@ json_parse_null(Context* ctx, char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
-    handle_error(ctx, "json_parse_null node calloc");
+    handle_error("json_parse_null node calloc");
   }
 
   *json_pos += strlen("null");
@@ -139,7 +139,7 @@ json_parse_object(Context* ctx, char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
-    handle_error(ctx, "json_parse_object node calloc");
+    handle_error("json_parse_object node calloc");
   }
 
   *json_pos += 1;
@@ -153,7 +153,7 @@ json_parse_object(Context* ctx, char** json_pos)
 
   JsonMember* children = malloc(sizeof(JsonMember));
   if (children == NULL) {
-    handle_error(ctx, "json_parse_object children malloc");
+    handle_error("json_parse_object children malloc");
   }
 
   size_t i = 0;
@@ -161,8 +161,7 @@ json_parse_object(Context* ctx, char** json_pos)
     children[i].key = parse_string(ctx, json_pos);
 
     if(**json_pos != ':') {
-      handle_error(ctx,
-                   "json_parse_object: expected ':', found '%c'\n",
+      handle_error("json_parse_object: expected ':', found '%c'\n",
                    **json_pos);
     }
 
@@ -177,7 +176,7 @@ json_parse_object(Context* ctx, char** json_pos)
 
       children = realloc(children, sizeof(JsonMember) * (i + 1));
       if (children == NULL) {
-        handle_error(ctx, "json_parse_object children realloc");
+        handle_error("json_parse_object children realloc");
       }
     }
 
@@ -188,8 +187,7 @@ json_parse_object(Context* ctx, char** json_pos)
   if (**json_pos == '}') {
     *json_pos += 1;
   } else {
-    handle_error(ctx,
-                 "json_parse_object: expected '}', got %c\n",
+    handle_error("json_parse_object: expected '}', got %c\n",
                  **json_pos);
   }
 
@@ -205,7 +203,7 @@ json_parse_array(Context* ctx, char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
-    handle_error(ctx, "json_parse_array node calloc");
+    handle_error("json_parse_array node calloc");
   }
 
   *json_pos += 1;
@@ -219,7 +217,7 @@ json_parse_array(Context* ctx, char** json_pos)
 
   JsonNode** children = malloc(sizeof(JsonNode*));
   if (children == NULL) {
-    handle_error(ctx, "json_parse_array children malloc");
+    handle_error("json_parse_array children malloc");
   }
 
   size_t i = 0;
@@ -234,7 +232,7 @@ json_parse_array(Context* ctx, char** json_pos)
 
     children = realloc(children, sizeof(JsonNode*) * (i + 1));
     if (children == NULL) {
-      handle_error(ctx, "json_parse_array children realloc");
+      handle_error("json_parse_array children realloc");
     }
   }
 
@@ -242,8 +240,7 @@ json_parse_array(Context* ctx, char** json_pos)
   if (**json_pos == ']') {
     *json_pos += 1;
   } else {
-    handle_error(ctx,
-                 "json_parse_array: expected ']', got %c\n",
+    handle_error("json_parse_array: expected ']', got %c\n",
                  **json_pos);
   }
 
@@ -288,7 +285,7 @@ parse_string(Context* ctx, char** str)
 
   char* string = strndup(buf, BUFFER_SIZE - 1);
   if (string == NULL) {
-    handle_error(ctx, "parse_string strndup");
+    handle_error("parse_string strndup");
   }
 
   return string;
@@ -310,7 +307,7 @@ char_to_json_type(Context* ctx, char ch)
   } else if (ch == '[') {
     return ARRAY;
   } else {
-    handle_error(ctx, "unknown json type; char: %c\n", ch);
+    handle_error("unknown json type; char: %c\n", ch);
   }
 
   return UNKNOWN;

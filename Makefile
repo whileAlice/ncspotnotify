@@ -17,7 +17,7 @@ ${BIN}: ${OBJ}
 	${CC} -o ${BIN} ${OBJ}
 
 run: ${BIN}
-	${BIN}
+	${BIN} --verbose
 
 runopt: CFLAGS += -O3
 runopt: run

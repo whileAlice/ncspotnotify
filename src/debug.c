@@ -20,7 +20,7 @@ debug_thread(void* args)
 
   struct pollfd* poll_fds = calloc(fd_count, sizeof(struct pollfd));
   if (poll_fds == NULL) {
-    handle_error(ctx, "debug_thread calloc (poll_fds)");
+    handle_error("debug_thread calloc (poll_fds)");
   }
 
   poll_fds[0].fd = STDIN_FILENO;
@@ -31,7 +31,7 @@ debug_thread(void* args)
     printf("debug thread waiting for stuff\n");
 
     if (poll(poll_fds, fd_count, -1) == -1) {
-      handle_error(ctx, "debug_thread poll");
+      handle_error("debug_thread poll");
     }
 
     if (ctx->should_quit_app) {
@@ -44,7 +44,7 @@ debug_thread(void* args)
       if (poll_fds[i].revents & POLLIN) {
         ssize_t length = read(poll_fds[i].fd, buf, sizeof(buf) - 1);
         if (length == -1) {
-          handle_error(ctx, "debug_thread read (poll_fds[%d])", (int)i);
+          handle_error("debug_thread read (poll_fds[%d])", (int)i);
         }
         buf[length - 1] = '\0';
 
