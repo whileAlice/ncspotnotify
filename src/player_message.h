@@ -55,14 +55,14 @@ typedef struct player_playable {
 } PlayerPlayable;
 
 typedef struct player_message {
-  PlayerMode     mode;
-  PlayerPlayable playable;
+  PlayerMode*     mode;
+  PlayerPlayable* playable;
 } PlayerMessage;
 
 PlayerMessage*  json_to_player_message (Context* ctx, char* json_string);
-void            parse_player_mode      (Context* ctx, PlayerMode* m,
+PlayerMode*     parse_json_mode        (Context* ctx,
                                         JsonMember* json_mode);
-void            parse_player_playable  (Context* ctx, PlayerPlayable* p,
+PlayerPlayable* parse_json_playable    (Context* ctx,
                                         JsonMember* json_playable);
 void            free_player_message    (PlayerMessage* pm);
 JsonMember*     get_child              (JsonNode* parent,   size_t index,

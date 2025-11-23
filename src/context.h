@@ -4,12 +4,18 @@
 
 #include "config.h"
 
-typedef struct context {
-  pthread_mutex_t lock;
+typedef struct socket_messages SocketMessages;
+typedef struct notifications   Notifications;
 
-  char socket_message[SOCKET_BUFFER_SIZE];
-  bool is_socket_message_ready;
-  bool should_quit_app;
-  bool has_error;
-  int  debug_pipe_fds[2];
+typedef struct context {
+  pthread_mutex_t mutex;
+  int             reader_pipe[2];
+  int             debug_pipe[2];
+  pthread_cond_t  processor_cond;
+  pthread_cond_t  notifier_cond;
+  SocketMessages* socket_messages;
+  Notifications*  notifications;
+  char            socket_message[SOCKET_BUFFER_SIZE];
+  bool            should_quit_app;
+  bool            has_error;
 } Context;

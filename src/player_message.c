@@ -8,6 +8,7 @@
 #include "context.h"
 #include "error.h"
 #include "json_parse.h"
+#include "json_print.h"
 
 PlayerMessage*
 json_to_player_message(Context* ctx, char* json_string)
@@ -18,19 +19,28 @@ json_to_player_message(Context* ctx, char* json_string)
   assert(json->type == OBJECT);
 
   auto* json_mode = get_child(json, 0, "mode");
-  parse_player_mode(ctx, &pm->mode, json_mode);
+  pm->mode = parse_json_mode(ctx, json_mode);
 
   auto* json_playable = get_child(json, 1, "playable");
-  parse_player_playable(ctx, &pm->playable, json_playable);
+  if (json_playable->value->type == JSON_NULL) {
+    pm->playable = NULL;
+  } else {
+    pm->playable = parse_json_playable(ctx, json_playable);
+  }
 
   free_json_node(json);
 
   return pm;
 }
 
-void
-parse_player_mode(Context* ctx, PlayerMode* m, JsonMember* json_mode)
+PlayerMode*
+parse_json_mode(Context* ctx, JsonMember* json_mode)
 {
+  PlayerMode* m = calloc(1, sizeof(PlayerMode));
+  if (m == NULL) {
+    handle_error(ctx, "parse_json_mode calloc");
+  }
+
   // string mode
   if (json_mode->value->type == STRING) {
     if (strcmp(json_mode->value->data.string, "Stopped") == 0) {
@@ -41,7 +51,7 @@ parse_player_mode(Context* ctx, PlayerMode* m, JsonMember* json_mode)
                    json_mode->value->data.string);
     }
 
-    return;
+    return m;
   }
 
   // k-v pair mode
@@ -62,12 +72,18 @@ parse_player_mode(Context* ctx, PlayerMode* m, JsonMember* json_mode)
                  "json_to_player_message: unknown mode state: \"%s\"\n",
                  state->key);
   }
+
+  return m;
 }
 
-void
-parse_player_playable(Context* ctx, PlayerPlayable* p,
-                      JsonMember* json_playable)
+PlayerPlayable*
+parse_json_playable(Context* ctx, JsonMember* json_playable)
 {
+  PlayerPlayable* p = calloc(1, sizeof(PlayerPlayable));
+  if (p == NULL) {
+    handle_error(ctx, "parse_json_playable calloc");
+  }
+
   auto* jp = json_playable;
 
   p->type          = get_child_playable_type(ctx, jp, 0,  "type");
@@ -88,13 +104,16 @@ parse_player_playable(Context* ctx, PlayerPlayable* p,
   p->list_index    = get_child_uint8_t      (ctx, jp, 15, "list_index");
   p->is_local      = get_child_boolean      (ctx, jp, 16, "is_local");
   p->is_playable   = get_child_boolean      (ctx, jp, 17, "is_playable");
+
+  return p;
 }
 
 void
 free_player_message(PlayerMessage* pm)
 {
-  auto* p = &pm->playable;
+  auto* p = pm->playable;
 
+  free             (pm->mode);
   free             (p->id);
   free             (p->uri);
   free             (p->title);
@@ -106,8 +125,8 @@ free_player_message(PlayerMessage* pm)
   free             (p->cover_url);
   free             (p->url);
   free             (p->added_at);
-
-  free(pm);
+  free             (p);
+  free             (pm);
 }
 
 JsonMember*

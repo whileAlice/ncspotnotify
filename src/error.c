@@ -1,6 +1,9 @@
+#define _POSIX_C_SOURCE
+#include <signal.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include "error.h"
 #include "context.h"
@@ -20,8 +23,11 @@ handle_error(Context* ctx, const char* fmt, ...)
     va_end(args);
 
     perror(buf);
-    MUTEX(&ctx->lock, {
-                        ctx->should_quit_app = true;
-                        ctx->has_error = true;
-                      });
+
+    MUTEX(&ctx->mutex, {
+            ctx->should_quit_app = true;
+            ctx->has_error = true;
+          });
+
+    kill(getpid(), SIGUSR1);
 }
