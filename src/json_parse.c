@@ -1,13 +1,11 @@
-#include "error.h"
 #include <ctype.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
 #include "json_parse.h"
 #include "json_print.h"
-#include "context.h"
+#include "error.h"
 
 #define BUFFER_SIZE 1024
 

@@ -1,15 +1,12 @@
 #include <poll.h>
-#include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <fcntl.h>
 #include <unistd.h>
 
-#include "socket_reader.h"
+#include "socket_reader_thread.h"
 #include "config.h"
 #include "context.h"
 #include "error.h"

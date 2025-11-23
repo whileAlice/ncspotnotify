@@ -1,5 +1,3 @@
-#include "error.h"
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +5,7 @@
 
 #include "notification.h"
 #include "player_message.h"
+#include "error.h"
 
 #define INITIAL_NOTIFICATIONS_CAPACITY 5
 #define MAX_NOTIFICATIONS_CAPACITY     20

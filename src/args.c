@@ -26,6 +26,5 @@ get_verbosity(int argc, char** argv)
     }
   }
 
-  msg("aaa\n");
   return QUIET;
 }

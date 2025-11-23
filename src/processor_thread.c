@@ -1,8 +1,7 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 
-#include "processor.h"
+#include "processor_thread.h"
 #include "context.h"
 #include "log.h"
 #include "mutex.h"

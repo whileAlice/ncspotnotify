@@ -1,9 +1,7 @@
-#include <stdio.h>
-#include <pthread.h>
-#include <assert.h>
 #include <stdlib.h>
+#include <assert.h>
 
-#include "notifier.h"
+#include "notifier_thread.h"
 #include "log.h"
 #include "notification.h"
 #include "context.h"

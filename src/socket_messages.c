@@ -1,12 +1,9 @@
-#include "error.h"
-#include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
 #include "socket_messages.h"
-#include "context.h"
+#include "error.h"
 
 #define INITIAL_MESSAGES_CAPACITY 5
 #define MAX_MESSAGES_CAPACITY     20

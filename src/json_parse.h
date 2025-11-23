@@ -1,6 +1,6 @@
 #pragma once
 
-#include "context.h"
+#include <stddef.h>
 
 typedef enum json_type {
   STRING = 0,

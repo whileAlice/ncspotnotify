@@ -1,6 +1,4 @@
-#include "log.h"
 #include <pthread.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
@@ -9,14 +7,14 @@
 
 #include "context.h"
 #include "error.h"
-#include "notification.h"
-#include "socket_reader.h"
+#include "socket_reader_thread.h"
+#include "processor_thread.h"
+#include "notifier_thread.h"
+#include "debug_thread.h"
 #include "socket_messages.h"
-#include "notifier.h"
-#include "debug.h"
 #include "args.h"
 #include "mutex.h"
-#include "processor.h"
+#include "log.h"
 
 extern Verbosity g_verbosity;
 

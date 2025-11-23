@@ -2,8 +2,6 @@
 
 #include <stddef.h>
 
-#include "context.h"
-
 typedef struct socket_messages {
   char** data;
   size_t count;

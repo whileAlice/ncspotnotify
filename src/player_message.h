@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 
-#include "context.h"
 #include "json_parse.h"
 
 typedef enum player_state {
