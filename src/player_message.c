@@ -52,16 +52,21 @@ parse_player_mode(Context* ctx, PlayerMode* m, JsonMember* json_mode)
     m->secs  = get_child_uint32_t(ctx, state, 0, "secs");
     m->nanos = get_child_uint32_t(ctx, state, 1, "nanos");
   } else if (strcmp(state->key, "Playing") == 0) {
-    m->state = PLAYING;
-    m->secs_since_epoch  = get_child_uint32_t(ctx, state, 0, "secs_since_epoch");
-    m->nanos_since_epoch = get_child_uint32_t(ctx, state, 1, "nanos_since_epoch");
+    m->state             = PLAYING;
+    m->secs_since_epoch  = get_child_uint32_t(ctx, state, 0,
+                                              "secs_since_epoch");
+    m->nanos_since_epoch = get_child_uint32_t(ctx, state, 1,
+                                              "nanos_since_epoch");
   } else {
-    handle_error(ctx, "json_to_player_message: unknown mode state: \"%s\"\n", state->key);
+    handle_error(ctx,
+                 "json_to_player_message: unknown mode state: \"%s\"\n",
+                 state->key);
   }
 }
 
 void
-parse_player_playable(Context* ctx, PlayerPlayable* p, JsonMember* json_playable)
+parse_player_playable(Context* ctx, PlayerPlayable* p,
+                      JsonMember* json_playable)
 {
   auto* jp = json_playable;
 
@@ -124,6 +129,7 @@ get_child_string(Context* ctx, JsonMember* parent,
                  size_t index, const char* name)
 {
   JsonMember* source_member = get_child(parent->value, index, name);
+  assert(source_member->value->type == STRING);
 
   char* string = source_member->value->data.string;
   source_member->value->data.string = NULL;
@@ -136,6 +142,7 @@ get_child_number(Context* ctx, JsonMember* parent,
                  size_t index, const char* name)
 {
   JsonMember* source_member = get_child(parent->value, index, name);
+  assert(source_member->value->type == NUMBER);
 
   return source_member->value->data.number;
 }
@@ -159,6 +166,7 @@ get_child_boolean(Context* ctx, JsonMember* parent,
                   size_t index, const char* name)
 {
   JsonMember* source_member = get_child(parent->value, index, name);
+  assert(source_member->value->type == BOOLEAN);
 
   return source_member->value->data.boolean;
 }
@@ -169,6 +177,7 @@ get_child_string_array(Context* ctx, JsonMember* parent,
 {
   JsonMember* source_member = get_child(parent->value, index, name);
   assert(strcmp(source_member->key, name) == 0);
+  assert(source_member->value->type == ARRAY);
 
   size_t count = source_member->value->children_count;
 
@@ -183,6 +192,7 @@ get_child_string_array(Context* ctx, JsonMember* parent,
 
   for (size_t i = 0; i < count; ++i) {
     auto* source_child = source_member->value->data.array_children[i];
+    assert(source_child->type == STRING);
 
     array.data[i] = source_child->data.string;
     array.count  += 1;
@@ -198,6 +208,7 @@ get_child_playable_type(Context* ctx, JsonMember* parent,
                         size_t index, const char* name)
 {
   JsonMember* source_member = get_child(parent->value, index, name);
+  assert(source_member->value->type == STRING);
 
   char* string = source_member->value->data.string;
   if (strcmp(string, "Track") == 0 ){
