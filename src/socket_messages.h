@@ -12,6 +12,6 @@ typedef struct socket_messages {
   size_t capacity;
 } SocketMessages;
 
-SocketMessages* init_socket_messages  (Context* ctx);
-void            enqueue_socket_message(Context* ctx, SocketMessages* ms, char* m);
-char*           dequeue_socket_message(Context* ctx, SocketMessages* ms);
+SocketMessages* init_socket_messages  (void);
+void            enqueue_socket_message(SocketMessages* ms, char* m);
+char*           dequeue_socket_message(SocketMessages* ms);

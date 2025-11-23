@@ -13,7 +13,7 @@
 
 // TODO: this could all be unified with notifications
 SocketMessages*
-init_socket_messages(Context* ctx)
+init_socket_messages(void)
 {
   SocketMessages* ms = malloc(sizeof(SocketMessages));
   if (ms == NULL) {
@@ -33,7 +33,7 @@ init_socket_messages(Context* ctx)
 }
 
 void
-enqueue_socket_message(Context* ctx, SocketMessages* ms, char* m)
+enqueue_socket_message(SocketMessages* ms, char* m)
 {
   if (ms->capacity == ms->count && ms->capacity < MAX_MESSAGES_CAPACITY) {
     size_t new_cap = ms->capacity * sizeof(SocketMessages) * 2;
@@ -56,7 +56,7 @@ enqueue_socket_message(Context* ctx, SocketMessages* ms, char* m)
 }
 
 char*
-dequeue_socket_message(Context* ctx, SocketMessages* ms)
+dequeue_socket_message(SocketMessages* ms)
 {
   assert(ms->data[ms->head] != NULL);
 

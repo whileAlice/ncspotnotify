@@ -80,7 +80,7 @@ socket_reader_thread(void* args)
         buf[length - 1] = '\0';
 
         MUTEX(&ctx->mutex, {
-                enqueue_socket_message(ctx, ctx->socket_messages, buf);
+                enqueue_socket_message(ctx->socket_messages, buf);
               });
         pthread_cond_broadcast(&ctx->processor_cond);
       }

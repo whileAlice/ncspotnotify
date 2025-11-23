@@ -12,38 +12,38 @@
 #define BUFFER_SIZE 1024
 
 JsonNode*
-json_parse(Context* ctx, char* json_string)
+json_parse(char* json_string)
 {
-  return json_parse_value(ctx, &json_string);
+  return json_parse_value(&json_string);
 }
 
 JsonNode*
-json_parse_value(Context* ctx, char** json_pos)
+json_parse_value(char** json_pos)
 {
   assert (**json_pos != '\0');
   skip_whitespace(json_pos);
 
   JsonNode* node = NULL;
-  JsonType  type = char_to_json_type(ctx, **json_pos);
+  JsonType  type = char_to_json_type(**json_pos);
 
   switch (type) {
   case STRING:
-    node = json_parse_string(ctx, json_pos);
+    node = json_parse_string(json_pos);
     break;
   case NUMBER:
-    node = json_parse_number(ctx, json_pos);
+    node = json_parse_number(json_pos);
     break;
   case BOOLEAN:
-    node = json_parse_boolean(ctx, json_pos);
+    node = json_parse_boolean(json_pos);
     break;
   case JSON_NULL:
-    node = json_parse_null(ctx, json_pos);
+    node = json_parse_null(json_pos);
     break;
   case OBJECT:
-    node = json_parse_object(ctx, json_pos);
+    node = json_parse_object(json_pos);
     break;
   case ARRAY:
-    node = json_parse_array(ctx, json_pos);
+    node = json_parse_array(json_pos);
     break;
   default:
     handle_error("unknown node type: %s\n", json_type_to_string(type));
@@ -55,7 +55,7 @@ json_parse_value(Context* ctx, char** json_pos)
 }
 
 JsonNode*
-json_parse_string(Context* ctx, char** json_pos)
+json_parse_string(char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
@@ -63,13 +63,13 @@ json_parse_string(Context* ctx, char** json_pos)
   }
 
   node->type        = STRING;
-  node->data.string = parse_string(ctx, json_pos);
+  node->data.string = parse_string(json_pos);
 
   return node;
 }
 
 JsonNode*
-json_parse_number(Context* ctx, char** json_pos)
+json_parse_number(char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
@@ -95,7 +95,7 @@ json_parse_number(Context* ctx, char** json_pos)
 }
 
 JsonNode*
-json_parse_boolean(Context* ctx, char** json_pos)
+json_parse_boolean(char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
@@ -119,7 +119,7 @@ json_parse_boolean(Context* ctx, char** json_pos)
 }
 
 JsonNode*
-json_parse_null(Context* ctx, char** json_pos)
+json_parse_null(char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
@@ -134,7 +134,7 @@ json_parse_null(Context* ctx, char** json_pos)
 }
 
 JsonNode*
-json_parse_object(Context* ctx, char** json_pos)
+json_parse_object(char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
@@ -157,7 +157,7 @@ json_parse_object(Context* ctx, char** json_pos)
 
   size_t i = 0;
   while (**json_pos != '}') {
-    children[i].key = parse_string(ctx, json_pos);
+    children[i].key = parse_string(json_pos);
 
     if(**json_pos != ':') {
       handle_error("json_parse_object: expected ':', found '%c'\n",
@@ -167,7 +167,7 @@ json_parse_object(Context* ctx, char** json_pos)
     *json_pos += 1;
     skip_whitespace(json_pos);
 
-    children[i].value = json_parse_value(ctx, json_pos);
+    children[i].value = json_parse_value(json_pos);
 
     if (**json_pos == ',') {
       i += 1;
@@ -198,7 +198,7 @@ json_parse_object(Context* ctx, char** json_pos)
 }
 
 JsonNode*
-json_parse_array(Context* ctx, char** json_pos)
+json_parse_array(char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
@@ -221,7 +221,7 @@ json_parse_array(Context* ctx, char** json_pos)
 
   size_t i = 0;
   while (**json_pos != ']') {
-    children[i] = json_parse_value(ctx, json_pos);
+    children[i] = json_parse_value(json_pos);
 
     if (**json_pos != ',') break;
 
@@ -251,7 +251,7 @@ json_parse_array(Context* ctx, char** json_pos)
 }
 
 char*
-parse_string(Context* ctx, char** str)
+parse_string(char** str)
 {
   char buf[BUFFER_SIZE];
 
@@ -291,7 +291,7 @@ parse_string(Context* ctx, char** str)
 }
 
 JsonType
-char_to_json_type(Context* ctx, char ch)
+char_to_json_type(char ch)
 {
   if        (ch == '"') {
     return STRING;

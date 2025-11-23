@@ -35,8 +35,8 @@ main(int argv, char** argc)
   pthread_mutex_init(&ctx->mutex,          NULL);
   pthread_cond_init (&ctx->processor_cond, NULL);
   pthread_cond_init (&ctx->notifier_cond,  NULL);
-  ctx->notifications   = init_notifications  (ctx);
-  ctx->socket_messages = init_socket_messages(ctx);
+  ctx->notifications   = init_notifications  ();
+  ctx->socket_messages = init_socket_messages();
 
   if (pipe(ctx->debug_pipe) == -1) {
     handle_error("debug_pipe");
@@ -85,6 +85,7 @@ main(int argv, char** argc)
 
   sigwait(&signal_set, &received_signal);
   dbg("received signal: \"%s\"", strsignal(received_signal));
+  msg("exiting app");
 
   MUTEX(&ctx->mutex, { ctx->should_quit_app = true; });
 

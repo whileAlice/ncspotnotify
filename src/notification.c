@@ -12,7 +12,7 @@
 #define MAX_NOTIFICATIONS_CAPACITY     20
 
 Notification*
-player_message_to_notification(Context* ctx, PlayerMessage* message)
+player_message_to_notification(PlayerMessage* message)
 {
   assert(message->playable != NULL);
 
@@ -40,7 +40,7 @@ free_notification(Notification* n)
 }
 
 Notification*
-clone_notification(Context* ctx, Notification* n)
+clone_notification(Notification* n)
 {
   Notification* c = malloc(sizeof(Notification));
   if (c == NULL) {
@@ -65,7 +65,7 @@ clone_notification(Context* ctx, Notification* n)
 }
 
 Notifications*
-init_notifications(Context* ctx)
+init_notifications(void)
 {
   Notifications* ns = malloc(sizeof(Notifications));
   if (ns == NULL) {
@@ -95,7 +95,7 @@ free_notifications(Notifications* ns)
 }
 
 void
-enqueue_notification(Context* ctx, Notifications* ns, Notification* n)
+enqueue_notification(Notifications* ns, Notification* n)
 {
   if (ns->capacity == ns->count && ns->capacity < MAX_NOTIFICATIONS_CAPACITY) {
     size_t new_cap = ns->capacity * sizeof(Notifications) * 2;
@@ -108,18 +108,18 @@ enqueue_notification(Context* ctx, Notifications* ns, Notification* n)
     free_notification(ns->data[ns->tail]);
   }
 
-  ns->data[ns->tail] = clone_notification(ctx, n);
+  ns->data[ns->tail] = clone_notification(n);
 
   ns->tail   = (ns->tail + 1) % ns->capacity;
   ns->count += 1;
 }
 
 Notification*
-dequeue_notification(Context* ctx, Notifications* ns)
+dequeue_notification(Notifications* ns)
 {
   assert(ns->data[ns->head] != NULL);
 
-  Notification* n = clone_notification(ctx, ns->data[ns->head]);
+  Notification* n = clone_notification(ns->data[ns->head]);
 
   ns->head   = (ns->head + 1) % ns->capacity;
   ns->count -= 1;
@@ -128,9 +128,9 @@ dequeue_notification(Context* ctx, Notifications* ns)
 }
 
 char*
-notification_to_string(Context* ctx, Notification* n)
+notification_to_string(Notification* n)
 {
-  char* state  = get_state_symbol(ctx, n->state);
+  char* state  = get_state_symbol(n->state);
 
   int length = snprintf(NULL, 0, NOTIFICATION_FORMAT, state,
                         n->artists, n->title, n->album);
@@ -149,7 +149,7 @@ notification_to_string(Context* ctx, Notification* n)
 }
 
 char*
-get_state_symbol(Context* ctx, PlayerState state)
+get_state_symbol(PlayerState state)
 {
   char buf[4];
 

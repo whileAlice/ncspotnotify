@@ -22,13 +22,13 @@ typedef struct notifications {
   size_t         capacity;
 } Notifications;
 
-Notification*  player_message_to_notification(Context* ctx, PlayerMessage* message);
+Notification*  player_message_to_notification(PlayerMessage* message);
 void           free_notification             (Notification* n);
-Notification*  clone_notification            (Context* ctx, Notification* n);
-Notifications* init_notifications            (Context* ctx);
+Notification*  clone_notification            (Notification* n);
+Notifications* init_notifications            (void);
 void           free_notifications            (Notifications* ns);
-void           enqueue_notification          (Context* ctx, Notifications* ns, Notification* n);
-Notification*  dequeue_notification          (Context* ctx, Notifications* ns);
-char*          notification_to_string        (Context* ctx, Notification* notification);
-char*          get_state_symbol              (Context* ctx, PlayerState state);
+void           enqueue_notification          (Notifications* ns, Notification* n);
+Notification*  dequeue_notification          (Notifications* ns);
+char*          notification_to_string        (Notification* notification);
+char*          get_state_symbol              (PlayerState state);
 char*          artists_to_string             (StringArray artists);

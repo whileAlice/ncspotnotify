@@ -23,16 +23,16 @@ processor_thread(void* args)
 
             while(ctx->socket_messages->count > 0) {
               char*          socket_message_json =
-                dequeue_socket_message(ctx, ctx->socket_messages);
+                dequeue_socket_message(ctx->socket_messages);
               PlayerMessage* pm =
-                json_to_player_message(ctx, socket_message_json);
+                json_to_player_message(socket_message_json);
 
               if (pm->playable == NULL) {
                 continue;
               }
 
-              Notification* n = player_message_to_notification(ctx, pm);
-              enqueue_notification(ctx, ctx->notifications, n);
+              Notification* n = player_message_to_notification(pm);
+              enqueue_notification(ctx->notifications, n);
               pthread_cond_broadcast(&ctx->notifier_cond);
 
               free(socket_message_json);

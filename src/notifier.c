@@ -21,7 +21,7 @@ notifier_thread(void* args)
             pthread_cond_wait(&ctx->notifier_cond, &ctx->mutex);
 
             while(ctx->notifications->count > 0) {
-              send_notification(ctx, dequeue_notification(ctx, ctx->notifications));
+              log_notification(dequeue_notification(ctx->notifications));
             }
           });
   }
@@ -32,7 +32,7 @@ notifier_thread(void* args)
 }
 
 void
-send_notification(Context* ctx, Notification* n)
+log_notification(Notification* n)
 {
-  msg(notification_to_string(ctx, n));
+  msg(notification_to_string(n));
 }
