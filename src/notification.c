@@ -33,29 +33,20 @@ free_notification(Notification* n)
 char*
 notification_to_string(Context* ctx, Notification* n)
 {
-  char* state = get_state_symbol(ctx, n->state);
+  char* state  = get_state_symbol(ctx, n->state);
 
-  size_t length = strlen(state) + 1 +
-                  strlen(n->artists) + 1 +
-                  strlen("-") + 1 +
-                  strlen(n->title) + 1 +
-                  strlen("(") + strlen(n->album) + strlen(")") + 1;
+  int length = snprintf(NULL, 0, NOTIFICATION_FORMAT, state,
+                        n->artists, n->title, n->album);
 
   char* str = malloc(length * sizeof(char));
+  if (str == NULL) {
+    handle_error(ctx, "notification_to_string malloc");
+  }
 
-  strcat(str, state);
-  strcat(str, " ");
-  strcat(str, n->artists);
-  strcat(str, " ");
-  strcat(str, "-");
-  strcat(str, " ");
-  strcat(str, n->title);
-  strcat(str, " ");
-  strcat(str, "(");
-  strcat(str, n->album);
-  strcat(str, ")");
-
-  str[length] = '\0';
+  if (snprintf(str, 1024, NOTIFICATION_FORMAT, state,
+               n->artists, n->title, n->album) != length) {
+    handle_error(ctx, "notification_to_string snprintf");
+  }
 
   return str;
 }
