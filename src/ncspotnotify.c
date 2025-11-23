@@ -4,12 +4,13 @@
 #include <errno.h>
 
 #include "context.h"
-#include "debug.h"
 #include "error.h"
 #include "notification.h"
 #include "player_message.h"
 #include "mutex.h"
 #include "socket_reader.h"
+#include "notifier.h"
+#include "debug.h"
 #include "usleep.h"
 
 int
@@ -28,11 +29,18 @@ main(void)
 
   pthread_mutex_init(&ctx->lock, NULL);
 
-  pthread_t socket_reader_thread_id, debug_thread_id;
+  pthread_t socket_reader_thread_id, notifier_thread_id,
+            debug_thread_id;
+
   errno = pthread_create(&socket_reader_thread_id, NULL,
                          socket_reader_thread, (void*)ctx);
   if (errno != 0) {
     handle_error(ctx, "pthread_create (reader)");
+  }
+  errno = pthread_create(&notifier_thread_id, NULL,
+                         notifier_thread, (void*)ctx);
+  if (errno != 0) {
+    handle_error(ctx, "pthread_create (notifier)");
   }
   errno = pthread_create(&debug_thread_id, NULL,
                          debug_thread, (void*)ctx);
@@ -59,6 +67,7 @@ main(void)
   }
 
   pthread_join(socket_reader_thread_id, NULL);
+  pthread_join(notifier_thread_id, NULL);
   pthread_join(debug_thread_id, NULL);
 
   errno = pthread_mutex_destroy(&ctx->lock);
