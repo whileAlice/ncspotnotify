@@ -31,20 +31,32 @@ json_to_player_message(Context* ctx, char* json_string)
 void
 parse_player_mode(Context* ctx, PlayerMode* m, JsonMember* json_mode)
 {
+  // string mode
+  if (json_mode->value->type == STRING) {
+    if (strcmp(json_mode->value->data.string, "Stopped") == 0) {
+      m->state = STOPPED;
+    } else {
+      handle_error(ctx,
+                   "json_to_player_message: unknown mode state: \"%s\"\n",
+                   json_mode->value->data.string);
+    }
+
+    return;
+  }
+
+  // k-v pair mode
   auto* state = get_child(json_mode->value, 0, NULL);
 
   if        (strcmp(state->key, "Paused") == 0) {
     m->state = PAUSED;
     m->secs  = get_child_uint32_t(ctx, state, 0, "secs");
     m->nanos = get_child_uint32_t(ctx, state, 1, "nanos");
-  } else if (strcmp(state->key, "Stopped") == 0) {
-    m->state = STOPPED;
   } else if (strcmp(state->key, "Playing") == 0) {
     m->state = PLAYING;
     m->secs_since_epoch  = get_child_uint32_t(ctx, state, 0, "secs_since_epoch");
     m->nanos_since_epoch = get_child_uint32_t(ctx, state, 1, "nanos_since_epoch");
   } else {
-    handle_error(ctx, "json_to_player_message: unknown mode state: %s\n", state);
+    handle_error(ctx, "json_to_player_message: unknown mode state: \"%s\"\n", state->key);
   }
 }
 
@@ -97,6 +109,7 @@ JsonMember*
 get_child(JsonNode* parent, size_t index, const char* name)
 {
   assert(parent->type == OBJECT);
+  assert(parent->children_count >= index + 1);
 
   JsonMember* m = &parent->data.object_children[index];
   if (name != NULL) {
