@@ -1,7 +1,6 @@
-#define _POSIX_C_SOURCE
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <poll.h>
 #include <string.h>
 #include <unistd.h>
@@ -9,6 +8,7 @@
 #include "debug.h"
 #include "context.h"
 #include "error.h"
+#include "log.h"
 
 void*
 debug_thread(void* args)
@@ -28,7 +28,7 @@ debug_thread(void* args)
   poll_fds[0].events = poll_fds[1].events = POLLIN;
 
   while (true) {
-    printf("debug thread waiting for stuff\n");
+    dbg("debug thread waiting for stuff");
 
     if (poll(poll_fds, fd_count, -1) == -1) {
       handle_error("debug_thread poll");
@@ -58,7 +58,7 @@ debug_thread(void* args)
   }
 
 close:
-  printf("closing debug thread gracefully\n");
+  dbg("closing debug thread gracefully");
 
   return NULL;
 }

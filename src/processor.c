@@ -4,6 +4,7 @@
 
 #include "processor.h"
 #include "context.h"
+#include "log.h"
 #include "mutex.h"
 #include "notification.h"
 #include "socket_messages.h"
@@ -17,7 +18,7 @@ processor_thread(void* args)
 
   while (!ctx->should_quit_app) {
     MUTEX(&ctx->mutex, {
-            printf("processor waiting for socket message\n");
+            dbg("processor waiting for socket message");
             pthread_cond_wait(&ctx->processor_cond, &ctx->mutex);
 
             while(ctx->socket_messages->count > 0) {
@@ -41,7 +42,7 @@ processor_thread(void* args)
           });
   }
 
-  printf("closing processor thread gracefully\n");
+  dbg("closing processor thread gracefully");
 
   return NULL;
 }

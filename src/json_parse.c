@@ -2,7 +2,6 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define _POSIX_C_SOURCE 200809L
 #include <string.h>
 #include <assert.h>
 
@@ -47,7 +46,7 @@ json_parse_value(Context* ctx, char** json_pos)
     node = json_parse_array(ctx, json_pos);
     break;
   default:
-    printf("unknown node type: %s\n", json_type_to_string(type));
+    handle_error("unknown node type: %s\n", json_type_to_string(type));
   }
 
   skip_whitespace(json_pos);

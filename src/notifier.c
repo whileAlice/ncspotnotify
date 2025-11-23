@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "notifier.h"
+#include "log.h"
 #include "notification.h"
 #include "context.h"
 #include "mutex.h"
@@ -16,7 +17,7 @@ notifier_thread(void* args)
 
   while (!ctx->should_quit_app) {
     MUTEX(&ctx->mutex, {
-            printf("notifier waiting for notification\n");
+            dbg("notifier waiting for notification");
             pthread_cond_wait(&ctx->notifier_cond, &ctx->mutex);
 
             while(ctx->notifications->count > 0) {
@@ -25,7 +26,7 @@ notifier_thread(void* args)
           });
   }
 
-  printf("closing notifier thread gracefully\n");
+  dbg("closing notifier thread gracefully");
 
   return NULL;
 }
@@ -33,5 +34,5 @@ notifier_thread(void* args)
 void
 send_notification(Context* ctx, Notification* n)
 {
-  printf("%s\n", notification_to_string(ctx, n));
+  msg(notification_to_string(ctx, n));
 }

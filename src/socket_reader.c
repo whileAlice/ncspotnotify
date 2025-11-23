@@ -1,6 +1,5 @@
 #include <poll.h>
 #include <pthread.h>
-#define _POSIX_C_SOURCE
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -16,6 +15,7 @@
 #include "error.h"
 #include "mutex.h"
 #include "socket_messages.h"
+#include "log.h"
 
 #define SOCKET_PATH  "/run/user/1000/ncspot/ncspot.sock"
 
@@ -51,7 +51,7 @@ socket_reader_thread(void* args)
 
   char buf[SOCKET_BUFFER_SIZE];
   while (true) {
-    printf("socket reader waiting for socket message\n");
+    dbg("socket reader waiting for socket");
 
     if (poll(poll_fds, fd_count, -1) == -1) {
       handle_error("socket_reader_thread poll");
@@ -71,7 +71,7 @@ socket_reader_thread(void* args)
         }
 
         if (length == 0) {
-          printf("ncspot socket closed\n");
+          msg("ncspot socket closed");
           kill(getpid(), SIGUSR1);
 
           goto close;
@@ -88,7 +88,7 @@ socket_reader_thread(void* args)
   }
 
 close:
-  printf("closing socket reader gracefully\n");
+  dbg("closing socket reader gracefully");
   if (close(socket_fd) == -1) {
     handle_error("close (socket)");
   }

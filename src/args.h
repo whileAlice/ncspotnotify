@@ -1,3 +1,5 @@
 #pragma once
 
-bool get_is_verbose(int argc, char** argv);
+#include "log.h"
+
+Verbosity get_verbosity(int argc, char** argv);

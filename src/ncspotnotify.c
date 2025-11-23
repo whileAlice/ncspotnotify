@@ -1,9 +1,10 @@
+#include "log.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
-#define _POSIX_C_SOURCE
+#include <string.h>
 #include <signal.h>
 
 #include "context.h"
@@ -17,12 +18,17 @@
 #include "mutex.h"
 #include "processor.h"
 
+extern Verbosity g_verbosity;
+
 int
 main(int argv, char** argc)
 {
+  g_verbosity = get_verbosity(argv, argc);
+  msg("set verbosity to %s", verbosity_to_string(g_verbosity));
+
   Context* ctx = calloc(1, sizeof(Context));
   if (ctx == NULL) {
-    perror("calloc (ctx)");
+    handle_error("main ctx calloc");
     exit(EXIT_FAILURE);
   }
 
@@ -31,7 +37,6 @@ main(int argv, char** argc)
   pthread_cond_init (&ctx->notifier_cond,  NULL);
   ctx->notifications   = init_notifications  (ctx);
   ctx->socket_messages = init_socket_messages(ctx);
-  ctx->is_verbose      = get_is_verbose(argv, argc);
 
   if (pipe(ctx->debug_pipe) == -1) {
     handle_error("debug_pipe");
@@ -79,10 +84,10 @@ main(int argv, char** argc)
   }
 
   sigwait(&signal_set, &received_signal);
+  dbg("received signal: \"%s\"", strsignal(received_signal));
 
   MUTEX(&ctx->mutex, { ctx->should_quit_app = true; });
 
-  printf("wakie wakie\n");
   // wake up threads
   const uint8_t byte = 0;
   if (write(ctx->debug_pipe[1], &byte, 1) != 1) {
