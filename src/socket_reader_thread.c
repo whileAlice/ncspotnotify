@@ -46,7 +46,7 @@ socket_reader_thread(void* args)
   poll_fds[1].fd = ctx->reader_pipe[0];
   poll_fds[0].events = poll_fds[1].events = POLLIN;
 
-  char buf[SOCKET_BUFFER_SIZE];
+  char buf[MESSAGE_BUFFER_SIZE];
   while (true) {
     dbg("socket reader waiting for socket");
 

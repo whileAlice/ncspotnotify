@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "log.h"
+#include "config.h"
 #include "error.h"
 
 Verbosity g_verbosity = QUIET;
@@ -18,14 +19,14 @@ dbg(const char* fmt, ...)
 {
   if (g_verbosity < DEBUG) return;
 
-  char        buf[1024];
+  char        buf[MESSAGE_BUFFER_SIZE];
   const char* prefix = "DBG: ";
   memcpy(buf, prefix, strlen(prefix));
 
   va_list args;
   va_start(args, fmt);
 
-  if (vsnprintf(&buf[strlen(prefix)], 1024, fmt, args) < 0) {
+  if (vsnprintf(&buf[strlen(prefix)], MESSAGE_BUFFER_SIZE, fmt, args) < 0) {
     handle_error("dbg vsnprintf");
   }
 
@@ -41,14 +42,14 @@ msg(const char* fmt, ...)
 {
   if (g_verbosity < INFO) return;
 
-  char        buf[1024];
+  char        buf[MESSAGE_BUFFER_SIZE];
   const char* prefix = "INFO: ";
   memcpy(buf, prefix, strlen(prefix));
 
   va_list args;
   va_start(args, fmt);
 
-  if (vsnprintf(&buf[strlen(prefix)], 1024, fmt, args) < 0) {
+  if (vsnprintf(&buf[strlen(prefix)], MESSAGE_BUFFER_SIZE, fmt, args) < 0) {
     handle_error("msg vsnprintf");
   }
 

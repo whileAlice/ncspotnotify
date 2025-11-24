@@ -4,10 +4,9 @@
 #include <assert.h>
 
 #include "json_parse.h"
+#include "config.h"
 #include "json_print.h"
 #include "error.h"
-
-#define BUFFER_SIZE 1024
 
 JsonNode*
 json_parse(char* json_string)
@@ -74,12 +73,12 @@ json_parse_number(char** json_pos)
     handle_error("json_parse_number node calloc");
   }
 
-  char buf[BUFFER_SIZE];
+  char buf[MESSAGE_BUFFER_SIZE];
 
   size_t i = 0;
   while (isdigit(**json_pos) || **json_pos == '.' || **json_pos == '-') {
     assert(**json_pos != '\0');
-    assert(i < BUFFER_SIZE);
+    assert(i < MESSAGE_BUFFER_SIZE);
 
     buf[i++] = *(*json_pos)++;
   }
@@ -251,11 +250,11 @@ json_parse_array(char** json_pos)
 char*
 parse_string(char** str)
 {
-  char buf[BUFFER_SIZE];
+  char buf[MESSAGE_BUFFER_SIZE];
 
   size_t i = 0;
   while (true) {
-    assert(i < BUFFER_SIZE);
+    assert(i < MESSAGE_BUFFER_SIZE);
 
     *str += 1;
     assert(**str != '\0');
@@ -280,7 +279,7 @@ parse_string(char** str)
 
   *str += 1;
 
-  char* string = strndup(buf, BUFFER_SIZE - 1);
+  char* string = strndup(buf, MESSAGE_BUFFER_SIZE - 1);
   if (string == NULL) {
     handle_error("parse_string strndup");
   }

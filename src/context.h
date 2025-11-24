@@ -15,7 +15,7 @@ typedef struct context {
   pthread_cond_t  notifier_cond;
   SocketMessages* socket_messages;
   Notifications*  notifications;
-  char            socket_message[SOCKET_BUFFER_SIZE];
+  char            socket_message[MESSAGE_BUFFER_SIZE];
   bool            should_quit_app;
   bool            is_verbose;
 } Context;

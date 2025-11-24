@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "debug_thread.h"
+#include "config.h"
 #include "context.h"
 #include "error.h"
 #include "log.h"
@@ -14,7 +15,7 @@ debug_thread(void* args)
 {
   Context* ctx = (Context*)args;
 
-  char   buf[1024];
+  char   buf[MESSAGE_BUFFER_SIZE];
   nfds_t fd_count = 2;
 
   struct pollfd* poll_fds = calloc(fd_count, sizeof(struct pollfd));

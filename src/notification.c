@@ -4,6 +4,7 @@
 #include <assert.h>
 
 #include "notification.h"
+#include "config.h"
 #include "player_message.h"
 #include "error.h"
 
@@ -139,7 +140,7 @@ notification_to_string(Notification* n)
     handle_error("notification_to_string malloc");
   }
 
-  if (snprintf(str, 1024, NOTIFICATION_FORMAT, state,
+  if (snprintf(str, MESSAGE_BUFFER_SIZE, NOTIFICATION_FORMAT, state,
                n->artists, n->title, n->album) != length) {
     handle_error("notification_to_string snprintf");
   }
