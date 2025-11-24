@@ -4,10 +4,8 @@
 #include <string.h>
 
 #include "player_message.h"
-#include "context.h"
 #include "error.h"
 #include "json_parse.h"
-#include "json_print.h"
 
 PlayerMessage*
 json_to_player_message(char* json_string)
@@ -21,11 +19,7 @@ json_to_player_message(char* json_string)
   pm->mode = parse_json_mode(json_mode);
 
   auto* json_playable = get_child(json, 1, "playable");
-  if (json_playable->value->type == JSON_NULL) {
-    pm->playable = NULL;
-  } else {
-    pm->playable = parse_json_playable(json_playable);
-  }
+  pm->playable = parse_json_playable(json_playable);
 
   free_json_node(json);
 
@@ -76,6 +70,10 @@ parse_json_mode(JsonMember* json_mode)
 PlayerPlayable*
 parse_json_playable(JsonMember* json_playable)
 {
+  if (json_playable->value->type == JSON_NULL) {
+    return NULL;
+  }
+
   PlayerPlayable* p = calloc(1, sizeof(PlayerPlayable));
   if (p == NULL) {
     handle_error("parse_json_playable calloc");
