@@ -5,6 +5,7 @@
 #include <string.h>
 #include <signal.h>
 
+#include "config.h"
 #include "context.h"
 #include "error.h"
 #include "socket_reader_thread.h"
@@ -16,18 +17,27 @@
 #include "mutex.h"
 #include "log.h"
 
-extern Verbosity g_verbosity;
+pthread_mutex_t g_main_mutex;
+pthread_cond_t  g_main_cond;
+bool            g_should_exit;
 
 int
 main(int argv, char** argc)
 {
-  g_verbosity = get_verbosity(argv, argc);
-  msg("set verbosity to %s", verbosity_to_string(g_verbosity));
+  set_verbosity(args_to_verbosity(argv, argc));
+  msg("set verbosity to %s", get_verbosity_string());
+
+  if (access(SOCKET_PATH, F_OK) < 0) {
+    set_error("socket not found at %s", SOCKET_PATH);
+
+    goto error_exit;
+  }
 
   Context* ctx = calloc(1, sizeof(Context));
   if (ctx == NULL) {
-    handle_error("main ctx calloc");
-    exit(EXIT_FAILURE);
+    set_error("main ctx calloc");
+
+    goto error_exit;
   }
 
   pthread_mutex_init(&ctx->mutex,          NULL);
@@ -37,11 +47,11 @@ main(int argv, char** argc)
   ctx->socket_messages = init_socket_messages();
 
   if (pipe(ctx->debug_pipe) == -1) {
-    handle_error("debug_pipe");
+    set_error("main debug_pipe");
     exit(EXIT_FAILURE);
   }
   if (pipe(ctx->reader_pipe) == -1) {
-    handle_error("reader_pipe");
+    set_error("main reader_pipe");
     exit(EXIT_FAILURE);
   }
 
@@ -60,29 +70,29 @@ main(int argv, char** argc)
   errno = pthread_create(&socket_reader_thread_id, NULL,
                          socket_reader_thread, (void*)ctx);
   if (errno != 0) {
-    handle_error("pthread_create (reader)");
+    set_error("main pthread_create (reader)");
   }
 
   errno = pthread_create(&processor_thread_id, NULL,
                          processor_thread, (void*)ctx);
   if (errno != 0) {
-    handle_error("pthread_create (processor)");
+    set_error("main pthread_create (processor)");
   }
 
   errno = pthread_create(&notifier_thread_id, NULL,
                          notifier_thread, (void*)ctx);
   if (errno != 0) {
-    handle_error("pthread_create (notifier)");
+    set_error("main pthread_create (notifier)");
   }
 
   errno = pthread_create(&debug_thread_id, NULL,
                          debug_thread, (void*)ctx);
   if (errno != 0) {
-    handle_error("pthread_create (debug)");
+    set_error("main pthread_create (debug)");
   }
 
   sigwait(&signal_set, &received_signal);
-  dbg("received signal: \"%s\"", strsignal(received_signal));
+  dbg("received signal: '%s'", strsignal(received_signal));
   msg("exiting app");
 
   MUTEX(&ctx->mutex, { ctx->should_quit_app = true; });
@@ -90,10 +100,10 @@ main(int argv, char** argc)
   // wake up threads
   const uint8_t byte = 0;
   if (write(ctx->debug_pipe[1], &byte, 1) != 1) {
-    handle_error("write (debug_pipe write end)");
+    set_error("main write (debug_pipe write end)");
   }
   if (write(ctx->reader_pipe[1], &byte, 1) != 1) {
-    handle_error("write (reader_pipe write end)");
+    set_error("main write (reader_pipe write end)");
   }
   pthread_cond_broadcast(&ctx->processor_cond);
   pthread_cond_broadcast(&ctx->notifier_cond);
@@ -104,32 +114,44 @@ main(int argv, char** argc)
   pthread_join(socket_reader_thread_id, NULL);
 
   if (close(ctx->debug_pipe[0]) == -1) {
-    handle_error("close (debug_pipe read end)");
+    set_error("main close (debug_pipe read end)");
   }
   if (close(ctx->debug_pipe[1]) == -1) {
-    handle_error("close (debug_pipe write end)");
+    set_error("main close (debug_pipe write end)");
   }
   if (close(ctx->reader_pipe[0]) == -1) {
-    handle_error("close (reader_pipe read end)");
+    set_error("main close (reader_pipe read end)");
   }
   if (close(ctx->reader_pipe[1]) == -1) {
-    handle_error("close (reader_pipe write end)");
+    set_error("main close (reader_pipe write end)");
   }
 
   errno = pthread_cond_destroy(&ctx->notifier_cond);
   if (errno != 0) {
-    handle_error("pthread_reader_cond_destroy");
+    set_error("main pthread_reader_cond_destroy");
   }
 
   errno = pthread_cond_destroy(&ctx->processor_cond);
   if (errno != 0) {
-    handle_error("pthread_notifier_cond_destroy");
+    set_error("main pthread_notifier_cond_destroy");
   }
 
   errno = pthread_mutex_destroy(&ctx->mutex);
   if (errno != 0) {
-    handle_error("pthread_mutex_destroy");
+    set_error("main pthread_mutex_destroy");
   }
 
   free(ctx);
+  set_error("y halo thar");
+  set_error("was is das?");
+
+error_exit:
+  if (has_error()) {
+    print_error(pthread_self());
+    print_error(socket_reader_thread_id);
+    exit(EXIT_FAILURE);
+  }
+
+  deinit_errors();
+  exit(EXIT_SUCCESS);
 }

@@ -5,9 +5,9 @@
 
 #include "json_parse.h"
 #include "config.h"
-#include "json_print.h"
 #include "error.h"
 
+// TODO: free after failure, so that parsing errors are not fatal
 JsonNode*
 json_parse(char* json_string)
 {
@@ -17,33 +17,31 @@ json_parse(char* json_string)
 JsonNode*
 json_parse_value(char** json_pos)
 {
-  assert (**json_pos != '\0');
+  assert(**json_pos != '\0');
+
   skip_whitespace(json_pos);
 
   JsonNode* node = NULL;
   JsonType  type = char_to_json_type(**json_pos);
 
-  switch (type) {
-  case STRING:
+  if        (type == STRING) {
     node = json_parse_string(json_pos);
-    break;
-  case NUMBER:
+  } else if (type == NUMBER) {
     node = json_parse_number(json_pos);
-    break;
-  case BOOLEAN:
+  } else if (type == BOOLEAN) {
     node = json_parse_boolean(json_pos);
-    break;
-  case JSON_NULL:
+  } else if (type == JSON_NULL) {
     node = json_parse_null(json_pos);
-    break;
-  case OBJECT:
+  } else if (type == OBJECT) {
     node = json_parse_object(json_pos);
-    break;
-  case ARRAY:
+  } else if (type == ARRAY) {
     node = json_parse_array(json_pos);
-    break;
-  default:
-    handle_error("unknown node type: %s\n", json_type_to_string(type));
+  } else {
+    return NULL;
+  }
+
+  if (node == NULL) {
+    return NULL;
   }
 
   skip_whitespace(json_pos);
@@ -56,7 +54,9 @@ json_parse_string(char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
-    handle_error("json_parse_string node calloc");
+    set_error("json_parse_string node calloc");
+
+    return NULL;
   }
 
   node->type        = STRING;
@@ -70,7 +70,9 @@ json_parse_number(char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
-    handle_error("json_parse_number node calloc");
+    set_error("json_parse_number node calloc");
+
+    return NULL;
   }
 
   char buf[MESSAGE_BUFFER_SIZE];
@@ -96,7 +98,9 @@ json_parse_boolean(char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
-    handle_error("json_parse_boolean node calloc");
+    set_error("json_parse_boolean node calloc");
+
+    return NULL;
   }
 
   bool boolean;
@@ -120,7 +124,9 @@ json_parse_null(char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
-    handle_error("json_parse_null node calloc");
+    set_error("json_parse_null node calloc");
+
+    return NULL;
   }
 
   *json_pos += strlen("null");
@@ -135,7 +141,9 @@ json_parse_object(char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
-    handle_error("json_parse_object node calloc");
+    set_error("json_parse_object node calloc");
+
+    return NULL;
   }
 
   *json_pos += 1;
@@ -149,22 +157,35 @@ json_parse_object(char** json_pos)
 
   JsonMember* children = malloc(sizeof(JsonMember));
   if (children == NULL) {
-    handle_error("json_parse_object children malloc");
+    set_error("json_parse_object children malloc");
+
+    return NULL;
   }
 
   size_t i = 0;
   while (**json_pos != '}') {
     children[i].key = parse_string(json_pos);
+    if (children[i].key == NULL) {
+      set_error("json_parse_object parse_string");
+
+      return NULL;
+    }
 
     if(**json_pos != ':') {
-      handle_error("json_parse_object: expected ':', found '%c'\n",
+      set_error("json_parse_object: expected ':', found '%c'",
                    **json_pos);
+      return NULL;
     }
 
     *json_pos += 1;
     skip_whitespace(json_pos);
 
     children[i].value = json_parse_value(json_pos);
+    if (children[i].value == NULL) {
+      set_error("json_parse_object json_parse_value");
+
+      return NULL;
+    }
 
     if (**json_pos == ',') {
       i += 1;
@@ -172,7 +193,9 @@ json_parse_object(char** json_pos)
 
       children = realloc(children, sizeof(JsonMember) * (i + 1));
       if (children == NULL) {
-        handle_error("json_parse_object children realloc");
+        set_error("json_parse_object children realloc");
+
+        return NULL;
       }
     }
 
@@ -183,8 +206,9 @@ json_parse_object(char** json_pos)
   if (**json_pos == '}') {
     *json_pos += 1;
   } else {
-    handle_error("json_parse_object: expected '}', got %c\n",
+    set_error("json_parse_object: expected '}', got '%c'",
                  **json_pos);
+    return NULL;
   }
 
   node->type                 = OBJECT;
@@ -199,7 +223,9 @@ json_parse_array(char** json_pos)
 {
   JsonNode* node = calloc(1, sizeof(JsonNode));
   if (node == NULL) {
-    handle_error("json_parse_array node calloc");
+    set_error("json_parse_array node calloc");
+
+    return NULL;
   }
 
   *json_pos += 1;
@@ -213,12 +239,19 @@ json_parse_array(char** json_pos)
 
   JsonNode** children = malloc(sizeof(JsonNode*));
   if (children == NULL) {
-    handle_error("json_parse_array children malloc");
+    set_error("json_parse_array children malloc");
+
+    return NULL;
   }
 
   size_t i = 0;
   while (**json_pos != ']') {
     children[i] = json_parse_value(json_pos);
+    if (children[i] == NULL) {
+      set_error("json_parse_array json_parse_value");
+
+      return NULL;
+    }
 
     if (**json_pos != ',') break;
 
@@ -228,7 +261,9 @@ json_parse_array(char** json_pos)
 
     children = realloc(children, sizeof(JsonNode*) * (i + 1));
     if (children == NULL) {
-      handle_error("json_parse_array children realloc");
+      set_error("json_parse_array children realloc");
+
+      return NULL;
     }
   }
 
@@ -236,8 +271,9 @@ json_parse_array(char** json_pos)
   if (**json_pos == ']') {
     *json_pos += 1;
   } else {
-    handle_error("json_parse_array: expected ']', got %c\n",
+    set_error("json_parse_array: expected ']', got '%c'",
                  **json_pos);
+    return NULL;
   }
 
   node->type                = ARRAY;
@@ -281,7 +317,9 @@ parse_string(char** str)
 
   char* string = strndup(buf, MESSAGE_BUFFER_SIZE - 1);
   if (string == NULL) {
-    handle_error("parse_string strndup");
+    set_error("parse_string strndup");
+
+    return NULL;
   }
 
   return string;
@@ -303,7 +341,7 @@ char_to_json_type(char ch)
   } else if (ch == '[') {
     return ARRAY;
   } else {
-    handle_error("unknown json type; char: %c\n", ch);
+    set_error("char_to_json_type: unknown json type (char: '%c')", ch);
   }
 
   return UNKNOWN;

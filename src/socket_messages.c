@@ -14,12 +14,12 @@ init_socket_messages(void)
 {
   SocketMessages* ms = malloc(sizeof(SocketMessages));
   if (ms == NULL) {
-    handle_error("init_socket_messages malloc");
+    set_error("init_socket_messages malloc");
   }
 
   ms->data     = calloc(INITIAL_MESSAGES_CAPACITY, sizeof(char*));
   if (ms->data == NULL) {
-    handle_error("init_socket_messages calloc");
+    set_error("init_socket_messages calloc");
   }
   ms->count    = 0;
   ms->head     = 0;
@@ -45,7 +45,7 @@ enqueue_socket_message(SocketMessages* ms, char* m)
 
   ms->data[ms->tail] = strdup(m);
   if (ms->data[ms->tail] == NULL) {
-    handle_error("enqueue_socket_message strdup");
+    set_error("enqueue_socket_message strdup");
   }
 
   ms->tail   = (ms->tail + 1) % ms->capacity;
@@ -59,7 +59,7 @@ dequeue_socket_message(SocketMessages* ms)
 
   char* m = strdup(ms->data[ms->head]);
   if (m == NULL) {
-    handle_error("dequeue_socket_message strdup");
+    set_error("dequeue_socket_message strdup");
   }
 
   ms->head   = (ms->head + 1) % ms->capacity;

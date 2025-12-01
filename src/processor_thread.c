@@ -3,6 +3,7 @@
 
 #include "processor_thread.h"
 #include "context.h"
+#include "error.h"
 #include "log.h"
 #include "mutex.h"
 #include "notification.h"
@@ -25,6 +26,12 @@ processor_thread(void* args)
                 dequeue_socket_message(ctx->socket_messages);
               PlayerMessage* pm =
                 json_to_player_message(socket_message_json);
+              if (pm == NULL) {
+                set_error("processor_thread json_to_player_message");
+                ctx->should_quit_app = true;
+
+                break;
+              }
 
               if (pm->playable == NULL) {
                 continue;

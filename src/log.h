@@ -6,6 +6,7 @@ typedef enum verbosity {
   DEBUG,
 } Verbosity;
 
-void        dbg                (const char* fmt, ...);
-void        msg                (const char* fmt, ...);
-const char* verbosity_to_string(Verbosity v);
+void        dbg                 (const char* fmt, ...);
+void        msg                 (const char* fmt, ...);
+void        set_verbosity       (Verbosity verbosity);
+const char* get_verbosity_string();

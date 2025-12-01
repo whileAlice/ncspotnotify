@@ -13,6 +13,12 @@ json_to_player_message(char* json_string)
   PlayerMessage* pm = calloc(1, sizeof(PlayerMessage));
 
   JsonNode* json = json_parse(json_string);
+  if (json == NULL) {
+    set_error("json_to_player_message json_parse");
+
+    return NULL;
+  }
+
   assert(json->type == OBJECT);
 
   auto* json_mode = get_child(json, 0, "mode");
@@ -31,7 +37,9 @@ parse_json_mode(JsonMember* json_mode)
 {
   PlayerMode* m = calloc(1, sizeof(PlayerMode));
   if (m == NULL) {
-    handle_error("parse_json_mode calloc");
+    set_error("parse_json_mode calloc");
+
+    return NULL;
   }
 
   // string mode
@@ -39,8 +47,9 @@ parse_json_mode(JsonMember* json_mode)
     if (strcmp(json_mode->value->data.string, "Stopped") == 0) {
       m->state = STOPPED;
     } else {
-      handle_error("json_to_player_message: unknown mode state: \"%s\"\n",
+      set_error("parse_json_mode: unknown mode state: '%s'",
                    json_mode->value->data.string);
+      return NULL;
     }
 
     return m;
@@ -60,8 +69,9 @@ parse_json_mode(JsonMember* json_mode)
     m->nanos_since_epoch = get_child_uint32_t(state, 1,
                                               "nanos_since_epoch");
   } else {
-    handle_error("json_to_player_message: unknown mode state: \"%s\"\n",
+    set_error("parse_json_mode: unknown mode state: '%s'",
                  state->key);
+    return NULL;
   }
 
   return m;
@@ -76,7 +86,9 @@ parse_json_playable(JsonMember* json_playable)
 
   PlayerPlayable* p = calloc(1, sizeof(PlayerPlayable));
   if (p == NULL) {
-    handle_error("parse_json_playable calloc");
+    set_error("parse_json_playable calloc");
+
+    return NULL;
   }
 
   auto* jp = json_playable;
@@ -229,7 +241,7 @@ get_child_playable_type(JsonMember* parent,
     return TRACK;
   }
 
-  handle_error("get_child_playable_type: unknown type: %s\n", string);
+  set_error("get_child_playable_type: unknown type: '%s'", string);
 
   return UNKNOWN_PLAYABLE_TYPE;
 }

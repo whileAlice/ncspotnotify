@@ -6,7 +6,7 @@
 #include "config.h"
 #include "error.h"
 
-Verbosity g_verbosity = QUIET;
+static Verbosity s_verbosity = QUIET;
 
 static const char* VERBOSITY[] = {
   [QUIET] = "QUIET",
@@ -17,7 +17,7 @@ static const char* VERBOSITY[] = {
 void
 dbg(const char* fmt, ...)
 {
-  if (g_verbosity < DEBUG) return;
+  if (s_verbosity < DEBUG) return;
 
   char        buf[MESSAGE_BUFFER_SIZE];
   const char* prefix = "DBG: ";
@@ -27,11 +27,11 @@ dbg(const char* fmt, ...)
   va_start(args, fmt);
 
   if (vsnprintf(&buf[strlen(prefix)], MESSAGE_BUFFER_SIZE, fmt, args) < 0) {
-    handle_error("dbg vsnprintf");
+    set_error("dbg vsnprintf");
   }
 
   if (puts(buf) == EOF) {
-    handle_error("dbg puts");
+    set_error("dbg puts");
   }
 
   va_end(args);
@@ -40,7 +40,7 @@ dbg(const char* fmt, ...)
 void
 msg(const char* fmt, ...)
 {
-  if (g_verbosity < INFO) return;
+  if (s_verbosity < INFO) return;
 
   char        buf[MESSAGE_BUFFER_SIZE];
   const char* prefix = "INFO: ";
@@ -50,19 +50,25 @@ msg(const char* fmt, ...)
   va_start(args, fmt);
 
   if (vsnprintf(&buf[strlen(prefix)], MESSAGE_BUFFER_SIZE, fmt, args) < 0) {
-    handle_error("msg vsnprintf");
+    set_error("msg vsnprintf");
   }
 
   if (puts(buf) == EOF) {
-    handle_error("msg puts");
+    set_error("msg puts");
   }
 
 
   va_end(args);
 }
 
-const char*
-verbosity_to_string(Verbosity v)
+void
+set_verbosity(Verbosity verbosity)
 {
-  return VERBOSITY[v];
+  s_verbosity = verbosity;
+}
+
+const char*
+get_verbosity_string()
+{
+  return VERBOSITY[s_verbosity];
 }

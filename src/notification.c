@@ -18,7 +18,7 @@ player_message_to_notification(PlayerMessage* message)
 
   Notification* n = calloc(1, sizeof(Notification));
   if (n == NULL) {
-    handle_error("player_message_to_notification calloc");
+    set_error("player_message_to_notification calloc");
   }
 
   n->state   = message->mode->state;
@@ -44,21 +44,21 @@ clone_notification(Notification* n)
 {
   Notification* c = malloc(sizeof(Notification));
   if (c == NULL) {
-    handle_error("clone_notification malloc");
+    set_error("clone_notification malloc");
   }
 
   c->state   = n->state;
   c->artists = strdup(n->artists);
   if (c->artists == NULL) {
-    handle_error("clone_notification artists strdup");
+    set_error("clone_notification artists strdup");
   }
   c->title   = strdup(n->title);
   if (c->title == NULL) {
-    handle_error("clone_notification title strdup");
+    set_error("clone_notification title strdup");
   }
   c->album   = strdup(n->album);
   if (c->album == NULL) {
-    handle_error("clone_notification album strdup");
+    set_error("clone_notification album strdup");
   }
 
   return c;
@@ -69,12 +69,12 @@ init_notifications(void)
 {
   Notifications* ns = malloc(sizeof(Notifications));
   if (ns == NULL) {
-    handle_error("init_notifications malloc");
+    set_error("init_notifications malloc");
   }
 
   ns->data     = calloc(INITIAL_NOTIFICATIONS_CAPACITY, sizeof(Notification*));
   if (ns->data == NULL) {
-    handle_error("init_notifications calloc");
+    set_error("init_notifications calloc");
   }
   ns->count    = 0;
   ns->head     = 0;
@@ -137,12 +137,12 @@ notification_to_string(Notification* n)
 
   char* str = malloc(length * sizeof(char));
   if (str == NULL) {
-    handle_error("notification_to_string malloc");
+    set_error("notification_to_string malloc");
   }
 
   if (snprintf(str, MESSAGE_BUFFER_SIZE, NOTIFICATION_FORMAT, state,
                n->artists, n->title, n->album) != length) {
-    handle_error("notification_to_string snprintf");
+    set_error("notification_to_string snprintf");
   }
 
   return str;
@@ -169,7 +169,7 @@ get_state_symbol(PlayerState state)
 
   char* str = strdup(buf);
   if (str == NULL) {
-    handle_error("notification get_state_symbol strdup");
+    set_error("notification get_state_symbol strdup");
   }
 
   return str;

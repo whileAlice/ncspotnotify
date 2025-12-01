@@ -1,10 +1,9 @@
 #include <string.h>
 
 #include "args.h"
-#include "log.h"
 
 Verbosity
-get_verbosity(int argc, char** argv)
+args_to_verbosity(int argc, char** argv)
 {
   for (int i = 1; i < argc; ++i) {
     if (strcmp(argv[i], "d") == 0 ||

@@ -2,4 +2,4 @@
 
 #include "log.h"
 
-Verbosity get_verbosity(int argc, char** argv);
+Verbosity args_to_verbosity(int argc, char** argv);
