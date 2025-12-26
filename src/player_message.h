@@ -48,7 +48,7 @@ typedef struct player_playable {
   char*        cover_url;
   char*        url;
   char*        added_at;
-  uint8_t      list_index;
+  uint32_t     list_index;
   bool         is_local;
   bool         is_playable;
 } PlayerPlayable;

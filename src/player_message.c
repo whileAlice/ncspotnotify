@@ -108,7 +108,7 @@ parse_json_playable(JsonMember* json_playable)
   p->cover_url     = get_child_string       (jp, 12, "cover_url");
   p->url           = get_child_string       (jp, 13, "url");
   p->added_at      = get_child_string       (jp, 14, "added_at");
-  p->list_index    = get_child_uint8_t      (jp, 15, "list_index");
+  p->list_index    = get_child_uint32_t     (jp, 15, "list_index");
   p->is_local      = get_child_boolean      (jp, 16, "is_local");
   p->is_playable   = get_child_boolean      (jp, 17, "is_playable");
 

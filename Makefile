@@ -15,6 +15,7 @@ CFLAGS = -Wall -Wextra -Wconversion -Wdouble-promotion \
          -D_POSIX_C_SOURCE=200809L
 
 ${BIN}: ${OBJ}
+	mkdir -p ${BINDIR}
 	${CC} -o ${BIN} ${OBJ}
 
 run: ${BIN}
