@@ -1,21 +1,24 @@
-#include <errno.h>
-#include <pthread.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
 #include "args.h"
 #include "config.h"
 #include "context.h"
 #include "debug_thread.h"
 #include "error.h"
+#include "executor_thread.h"
 #include "log.h"
 #include "mutex.h"
+#include "notification.h"
 #include "notifier_thread.h"
 #include "processor_thread.h"
 #include "socket_messages.h"
 #include "socket_reader_thread.h"
+
+#include <errno.h>
+#include <pthread.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 
 pthread_mutex_t g_main_mutex;
 pthread_cond_t  g_main_cond;
@@ -74,6 +77,7 @@ main (int argv, char** argc)
    pthread_t socket_reader_thread_id;
    pthread_t processor_thread_id;
    pthread_t notifier_thread_id;
+   pthread_t executor_thread_id;
    pthread_t debug_thread_id;
 
    errno = pthread_create (&socket_reader_thread_id, NULL, socket_reader_thread,
@@ -91,6 +95,11 @@ main (int argv, char** argc)
    if (errno != 0)
       set_error ("main pthread_create (notifier)");
 
+   errno =
+     pthread_create (&executor_thread_id, NULL, executor_thread, (void*)ctx);
+   if (errno != 0)
+      set_error ("main pthread_create (executor)");
+
    errno = pthread_create (&debug_thread_id, NULL, debug_thread, (void*)ctx);
    if (errno != 0)
       set_error ("main pthread_create (debug)");
@@ -102,6 +111,7 @@ main (int argv, char** argc)
 
    IN_LOCK (&ctx->mutex,
       ctx->should_quit_app = true;
+      dbg ("main: %d\n", ctx->should_quit_app);
    );
 
    // wake up threads
@@ -120,6 +130,7 @@ main (int argv, char** argc)
    });
 
    pthread_join (debug_thread_id, NULL);
+   pthread_join (executor_thread_id, NULL);
    pthread_join (notifier_thread_id, NULL);
    pthread_join (processor_thread_id, NULL);
    pthread_join (socket_reader_thread_id, NULL);

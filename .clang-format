@@ -34,12 +34,19 @@ BraceWrapping:
   AfterFunction: true
   AfterControlStatement: true
   BeforeElse: true
+  BeforeWhile: true
 
 BreakBinaryOperations: RespectPrecedence
 
-ExperimentalAutoDetectBinPacking: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:           '^"'
+    Priority:        1
+  - Regex:           '^<'
+    Priority:        2
 
 IndentCaseLabels: false
+
 IndentWidth: 3
 
 WhitespaceSensitiveMacros: [IN_LOCK]

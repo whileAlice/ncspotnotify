@@ -8,6 +8,7 @@ typedef enum player_state {
    PAUSED = 0,
    PLAYING,
    STOPPED,
+   FINISHED_TRACK,
 } PlayerState;
 
 typedef enum playable_type {

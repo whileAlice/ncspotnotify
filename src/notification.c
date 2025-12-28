@@ -150,9 +150,10 @@ get_state_symbol (PlayerState state)
 
    switch (state)
    {
-   case PAUSED : strcpy (buf, "\u23f8"); break;
-   case PLAYING: strcpy (buf, "\u23f5"); break;
-   case STOPPED: strcpy (buf, "\u23f9"); break;
+   case PAUSED        : strcpy (buf, "\u23f8"); break; // ⏸
+   case PLAYING       : strcpy (buf, "\u23f5"); break; // ⏵
+   case STOPPED       : strcpy (buf, "\u23f9"); break; // ⏹
+   case FINISHED_TRACK: strcpy (buf, "\u2298"); break; // ⊘
    }
 
    buf[3] = '\0';

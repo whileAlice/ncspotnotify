@@ -52,8 +52,11 @@ parse_json_mode (JsonMember* json_mode)
    {
       if (strcmp (json_mode->value->data.string, "Stopped") == 0)
          m->state = STOPPED;
+      else if (strcmp (json_mode->value->data.string, "FinishedTrack") == 0)
+         m->state = FINISHED_TRACK;
       else
       {
+         // FIXME: this never shows up when unknown string appears
          set_error ("parse_json_mode: unknown mode state: '%s'",
                     json_mode->value->data.string);
          return NULL;

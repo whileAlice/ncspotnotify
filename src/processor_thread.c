@@ -36,7 +36,7 @@ processor_thread (void* args)
                break;
             }
 
-            if (pm->playable == NULL)
+            if (pm->playable == NULL || pm->mode->state == FINISHED_TRACK)
                continue;
 
             Notification* n = player_message_to_notification (pm);
