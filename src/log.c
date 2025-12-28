@@ -2,73 +2,72 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "log.h"
 #include "config.h"
 #include "error.h"
+#include "log.h"
 
 static Verbosity s_verbosity = QUIET;
 
 static const char* VERBOSITY[] = {
-  [QUIET] = "QUIET",
-  [INFO]  = "INFO",
-  [DEBUG] = "DBG",
+   [QUIET] = "QUIET",
+   [INFO]  = "INFO",
+   [DEBUG] = "DBG",
 };
 
 void
-dbg(const char* fmt, ...)
+dbg (const char* fmt, ...)
 {
-  if (s_verbosity < DEBUG) return;
+   if (s_verbosity < DEBUG)
+      return;
 
-  char        buf[MESSAGE_BUFFER_SIZE];
-  const char* prefix = "DBG: ";
-  memcpy(buf, prefix, strlen(prefix));
+   char        buf[MESSAGE_BUFFER_SIZE];
+   const char* prefix = "DBG: ";
 
-  va_list args;
-  va_start(args, fmt);
+   memcpy (buf, prefix, strlen (prefix));
 
-  if (vsnprintf(&buf[strlen(prefix)], MESSAGE_BUFFER_SIZE, fmt, args) < 0) {
-    set_error("dbg vsnprintf");
-  }
+   va_list args;
+   va_start (args, fmt);
 
-  if (puts(buf) == EOF) {
-    set_error("dbg puts");
-  }
+   if (vsnprintf (&buf[strlen (prefix)], MESSAGE_BUFFER_SIZE, fmt, args) < 0)
+      set_error ("dbg vsnprintf");
 
-  va_end(args);
+   if (puts (buf) == EOF)
+      set_error ("dbg puts");
+
+   va_end (args);
 }
 
 void
-msg(const char* fmt, ...)
+msg (const char* fmt, ...)
 {
-  if (s_verbosity < INFO) return;
+   if (s_verbosity < INFO)
+      return;
 
-  char        buf[MESSAGE_BUFFER_SIZE];
-  const char* prefix = "INFO: ";
-  memcpy(buf, prefix, strlen(prefix));
+   char        buf[MESSAGE_BUFFER_SIZE];
+   const char* prefix = "INFO: ";
 
-  va_list args;
-  va_start(args, fmt);
+   memcpy (buf, prefix, strlen (prefix));
 
-  if (vsnprintf(&buf[strlen(prefix)], MESSAGE_BUFFER_SIZE, fmt, args) < 0) {
-    set_error("msg vsnprintf");
-  }
+   va_list args;
+   va_start (args, fmt);
 
-  if (puts(buf) == EOF) {
-    set_error("msg puts");
-  }
+   if (vsnprintf (&buf[strlen (prefix)], MESSAGE_BUFFER_SIZE, fmt, args) < 0)
+      set_error ("msg vsnprintf");
 
+   if (puts (buf) == EOF)
+      set_error ("msg puts");
 
-  va_end(args);
+   va_end (args);
 }
 
 void
-set_verbosity(Verbosity verbosity)
+set_verbosity (Verbosity verbosity)
 {
-  s_verbosity = verbosity;
+   s_verbosity = verbosity;
 }
 
 const char*
-get_verbosity_string()
+get_verbosity_string ()
 {
-  return VERBOSITY[s_verbosity];
+   return VERBOSITY[s_verbosity];
 }

@@ -2,5 +2,6 @@
 
 #include "notification.h"
 
-void* notifier_thread (void* args);
-void  log_notification(Notification* n);
+// clang-format off
+void* notifier_thread  (void* args);
+void  log_notification (Notification* n);

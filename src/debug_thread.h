@@ -1,3 +1,3 @@
 #pragma once
 
-void* debug_thread(void* args);
+void* debug_thread (void* args);
