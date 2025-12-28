@@ -1,10 +1,4 @@
-#include <poll.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
+#include "socket_reader_thread.h"
 
 #include "config.h"
 #include "context.h"
@@ -12,7 +6,14 @@
 #include "log.h"
 #include "mutex.h"
 #include "socket_messages.h"
-#include "socket_reader_thread.h"
+
+#include <poll.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
 
 void*
 socket_reader_thread (void* args)
@@ -76,7 +77,7 @@ socket_reader_thread (void* args)
 
             IN_LOCK (&ctx->mutex,
             {
-               enqueue_socket_message (ctx->socket_messages, buf);
+               socket_messages_enqueue (ctx->socket_messages, buf);
                pthread_cond_broadcast (&ctx->processor_cond);
             });
          }

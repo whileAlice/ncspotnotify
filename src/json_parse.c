@@ -1,11 +1,12 @@
+#include "json_parse.h"
+
+#include "config.h"
+#include "error.h"
+
 #include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "config.h"
-#include "error.h"
-#include "json_parse.h"
 
 // TODO: free after failure, so that parsing errors are not fatal
 JsonNode*

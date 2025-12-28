@@ -1,13 +1,13 @@
+#include "notification.h"
+
+#include "config.h"
+#include "error.h"
+#include "player_message.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "config.h"
-#include "error.h"
-#include "notification.h"
-
-#include "player_message.h"
 
 #define INITIAL_NOTIFICATIONS_CAPACITY 5
 #define MAX_NOTIFICATIONS_CAPACITY     20
@@ -25,101 +25,6 @@ player_message_to_notification (PlayerMessage* message)
    n->artists = artists_to_string (message->playable->artists);
    n->title   = strdup (message->playable->title);
    n->album   = strdup (message->playable->album);
-
-   return n;
-}
-
-void
-free_notification (Notification* n)
-{
-   free (n->artists);
-   free (n->title);
-   free (n->album);
-
-   free (n);
-}
-
-Notification*
-clone_notification (Notification* n)
-{
-   Notification* c = malloc (sizeof (Notification));
-   if (c == NULL)
-      set_error ("clone_notification malloc");
-
-   c->state = n->state;
-
-   c->artists = strdup (n->artists);
-   if (c->artists == NULL)
-      set_error ("clone_notification artists strdup");
-
-   c->title = strdup (n->title);
-   if (c->title == NULL)
-      set_error ("clone_notification title strdup");
-
-   c->album = strdup (n->album);
-   if (c->album == NULL)
-      set_error ("clone_notification album strdup");
-
-   return c;
-}
-
-Notifications*
-init_notifications (void)
-{
-   Notifications* ns = malloc (sizeof (Notifications));
-   if (ns == NULL)
-      set_error ("init_notifications malloc");
-
-   ns->data = calloc (INITIAL_NOTIFICATIONS_CAPACITY, sizeof (Notification*));
-   if (ns->data == NULL)
-      set_error ("init_notifications calloc");
-
-   ns->count    = 0;
-   ns->head     = 0;
-   ns->tail     = 0;
-   ns->capacity = INITIAL_NOTIFICATIONS_CAPACITY;
-
-   return ns;
-}
-
-void
-free_notifications (Notifications* ns)
-{
-   for (size_t i = 0; i < ns->count; ++i)
-      free_notification (ns->data[i]);
-
-   free (ns);
-}
-
-void
-enqueue_notification (Notifications* ns, Notification* n)
-{
-   if (ns->capacity == ns->count && ns->capacity < MAX_NOTIFICATIONS_CAPACITY)
-   {
-      size_t new_cap = ns->capacity * sizeof (Notifications) * 2;
-
-      ns           = realloc (ns, new_cap);
-      ns->capacity = new_cap;
-   }
-
-   if (ns->data[ns->tail] != NULL)
-      free_notification (ns->data[ns->tail]);
-
-   ns->data[ns->tail] = clone_notification (n);
-
-   ns->tail   = (ns->tail + 1) % ns->capacity;
-   ns->count += 1;
-}
-
-Notification*
-dequeue_notification (Notifications* ns)
-{
-   assert (ns->data[ns->head] != NULL);
-
-   Notification* n = clone_notification (ns->data[ns->head]);
-
-   ns->head   = (ns->head + 1) % ns->capacity;
-   ns->count -= 1;
 
    return n;
 }

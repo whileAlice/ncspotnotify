@@ -6,7 +6,6 @@
 #include "executor_thread.h"
 #include "log.h"
 #include "mutex.h"
-#include "notification.h"
 #include "notifier_thread.h"
 #include "processor_thread.h"
 #include "socket_messages.h"
@@ -48,8 +47,8 @@ main (int argv, char** argc)
    pthread_cond_init (&ctx->processor_cond, NULL);
    pthread_cond_init (&ctx->notifier_cond, NULL);
 
-   ctx->notifications   = init_notifications ();
-   ctx->socket_messages = init_socket_messages ();
+   ctx->notifications   = notifications_init ();
+   ctx->socket_messages = socket_messages_init ();
 
    if (pipe (ctx->debug_pipe) == -1)
    {

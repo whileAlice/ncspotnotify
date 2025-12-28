@@ -1,11 +1,12 @@
+#include "player_message.h"
+
+#include "error.h"
+#include "json_parse.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "error.h"
-#include "json_parse.h"
-#include "player_message.h"
 
 PlayerMessage*
 json_to_player_message (char* json_string)

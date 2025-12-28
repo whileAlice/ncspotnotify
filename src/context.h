@@ -1,12 +1,12 @@
 #pragma once
 
+#include "config.h"
+#include "notifications.h"
+#include "socket_messages.h"
+
 #include <pthread.h>
 
-#include "config.h"
-
-typedef struct socket_messages SocketMessages;
-typedef struct notifications   Notifications;
-typedef struct processes       Processes;
+typedef struct processes Processes;
 
 typedef struct context {
    pthread_mutex_t mutex;

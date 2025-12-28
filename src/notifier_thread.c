@@ -5,7 +5,7 @@
 #include "log.h"
 #include "mutex.h"
 #include "notification.h"
-#include "player_message.h"
+#include "notifications.h"
 
 #include <assert.h>
 #include <spawn.h>
@@ -31,8 +31,8 @@ notifier_thread (void* args)
       {
          while (ctx->notifications->count > 0)
          {
-            Notification* n       = dequeue_notification (ctx->notifications);
-                          argv[1] = notification_to_string (n);
+            Notification* n = notifications_dequeue (ctx->notifications);
+                    argv[1] = notification_to_string (n);
 
             int err =
               posix_spawnp (&child_pid, NOTIFICATION_CMD,
@@ -52,7 +52,7 @@ notifier_thread (void* args)
 
 close:
    dbg ("closing notifier thread gracefully");
-   free(argv);
+   free (argv);
 
    return NULL;
 }

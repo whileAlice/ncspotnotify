@@ -1,16 +1,12 @@
 #pragma once
 
-#include <stddef.h>
+#include "ring_buffer.h"
 
-typedef struct socket_messages {
-   char** data;
-   size_t count;
-   size_t head;
-   size_t tail;
-   size_t capacity;
-} SocketMessages;
+typedef char* SocketMessage;
 
 // clang-format off
-SocketMessages* init_socket_messages   (void);
-void            enqueue_socket_message (SocketMessages* ms, char* m);
-char*           dequeue_socket_message (SocketMessages* ms);
+SocketMessage socket_message_copy (SocketMessage sm);
+void          socket_message_free (SocketMessage sm);
+
+RING_BUFFER_DECLARE (SocketMessage,  socket_message,
+                     SocketMessages, socket_messages);

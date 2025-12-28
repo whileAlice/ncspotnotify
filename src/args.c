@@ -1,6 +1,6 @@
-#include <string.h>
-
 #include "args.h"
+
+#include <string.h>
 
 Verbosity
 args_to_verbosity (int argc, char** argv)

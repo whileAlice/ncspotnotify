@@ -1,3 +1,7 @@
+#include "error.h"
+
+#include "main_thread.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <pthread.h>
@@ -5,9 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "error.h"
-#include "main_thread.h"
 
 static Error* s_errors_head = NULL;
 

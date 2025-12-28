@@ -1,10 +1,11 @@
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
+#include "log.h"
 
 #include "config.h"
 #include "error.h"
-#include "log.h"
+
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 
 static Verbosity s_verbosity = QUIET;
 

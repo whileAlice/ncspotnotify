@@ -1,8 +1,8 @@
 #pragma once
 
-#include <stdint.h>
-
 #include "json_parse.h"
+
+#include <stdint.h>
 
 typedef enum player_state {
    PAUSED = 0,

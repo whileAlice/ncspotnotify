@@ -1,5 +1,4 @@
-#include <assert.h>
-#include <stdlib.h>
+#include "processor_thread.h"
 
 #include "context.h"
 #include "error.h"
@@ -7,8 +6,10 @@
 #include "mutex.h"
 #include "notification.h"
 #include "player_message.h"
-#include "processor_thread.h"
 #include "socket_messages.h"
+
+#include <assert.h>
+#include <stdlib.h>
 
 void*
 processor_thread (void* args)
@@ -26,7 +27,7 @@ processor_thread (void* args)
          while (ctx->socket_messages->count > 0)
          {
             char* socket_message_json =
-               dequeue_socket_message (ctx->socket_messages);
+               socket_messages_dequeue (ctx->socket_messages);
 
             PlayerMessage* pm = json_to_player_message (socket_message_json);
             if (pm == NULL)
@@ -40,11 +41,11 @@ processor_thread (void* args)
                continue;
 
             Notification* n = player_message_to_notification (pm);
-            enqueue_notification (ctx->notifications, n);
+            notifications_enqueue (ctx->notifications, n);
             pthread_cond_broadcast (&ctx->notifier_cond);
 
             free (socket_message_json);
-            free_notification (n);
+            notification_free (n);
             free_player_message (pm);
          }
       });

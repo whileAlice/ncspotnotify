@@ -1,14 +1,15 @@
+#include "debug_thread.h"
+
+#include "config.h"
+#include "context.h"
+#include "error.h"
+#include "log.h"
+
 #include <poll.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-
-#include "config.h"
-#include "context.h"
-#include "debug_thread.h"
-#include "error.h"
-#include "log.h"
 
 void*
 debug_thread (void* args)

@@ -1,7 +1,8 @@
-#include <stdio.h>
+#include "json_print.h"
 
 #include "json_parse.h"
-#include "json_print.h"
+
+#include <stdio.h>
 
 const char* JSON_TYPE_STRINGS[] = {
    "String", "Number", "Boolean", "Null", "Object", "Array", "Unknown",
