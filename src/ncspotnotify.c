@@ -3,13 +3,13 @@
 #include "context.h"
 #include "debug_thread.h"
 #include "error.h"
-#include "executor_thread.h"
 #include "log.h"
 #include "mutex.h"
 #include "notifier_thread.h"
 #include "processor_thread.h"
 #include "socket_messages.h"
 #include "socket_reader_thread.h"
+#include "terminator_thread.h"
 
 #include <errno.h>
 #include <pthread.h>
@@ -46,9 +46,11 @@ main (int argv, char** argc)
 
    pthread_cond_init (&ctx->processor_cond, NULL);
    pthread_cond_init (&ctx->notifier_cond, NULL);
+   pthread_cond_init (&ctx->terminator_cond, NULL);
 
    ctx->notifications   = notifications_init ();
    ctx->socket_messages = socket_messages_init ();
+   ctx->processes       = processes_init ();
 
    if (pipe (ctx->debug_pipe) == -1)
    {
@@ -76,7 +78,7 @@ main (int argv, char** argc)
    pthread_t socket_reader_thread_id;
    pthread_t processor_thread_id;
    pthread_t notifier_thread_id;
-   pthread_t executor_thread_id;
+   pthread_t terminator_thread_id;
    pthread_t debug_thread_id;
 
    errno = pthread_create (&socket_reader_thread_id, NULL, socket_reader_thread,
@@ -94,10 +96,10 @@ main (int argv, char** argc)
    if (errno != 0)
       set_error ("main pthread_create (notifier)");
 
-   errno =
-     pthread_create (&executor_thread_id, NULL, executor_thread, (void*)ctx);
+   errno = pthread_create (&terminator_thread_id, NULL, terminator_thread,
+                           (void*)ctx);
    if (errno != 0)
-      set_error ("main pthread_create (executor)");
+      set_error ("main pthread_create (terminator)");
 
    errno = pthread_create (&debug_thread_id, NULL, debug_thread, (void*)ctx);
    if (errno != 0)
@@ -126,10 +128,11 @@ main (int argv, char** argc)
    {
       pthread_cond_broadcast (&ctx->processor_cond);
       pthread_cond_broadcast (&ctx->notifier_cond);
+      pthread_cond_broadcast (&ctx->terminator_cond);
    });
 
    pthread_join (debug_thread_id, NULL);
-   pthread_join (executor_thread_id, NULL);
+   pthread_join (terminator_thread_id, NULL);
    pthread_join (notifier_thread_id, NULL);
    pthread_join (processor_thread_id, NULL);
    pthread_join (socket_reader_thread_id, NULL);
@@ -150,6 +153,10 @@ main (int argv, char** argc)
    errno = pthread_cond_destroy (&ctx->processor_cond);
    if (errno != 0)
       set_error ("main pthread_notifier_cond_destroy");
+
+   errno = pthread_cond_destroy (&ctx->terminator_cond);
+   if (errno != 0)
+      set_error ("main pthread_terminator_cond_destroy");
 
    errno = pthread_mutex_destroy (&ctx->mutex);
    if (errno != 0)

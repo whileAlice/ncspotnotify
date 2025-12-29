@@ -8,6 +8,7 @@
 #include "notifications.h"
 
 #include <assert.h>
+#include <pthread.h>
 #include <spawn.h>
 #include <stdlib.h>
 
@@ -42,6 +43,12 @@ notifier_thread (void* args)
                set_error ("posix spawnp");
                goto close;
             }
+
+            time_t timestamp = time (NULL);
+            Process* process = process_create (child_pid, timestamp);
+
+            processes_enqueue (ctx->processes, process);
+            pthread_cond_broadcast (&ctx->terminator_cond);
          };
 
          dbg ("notifier waiting for notification");

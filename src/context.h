@@ -13,6 +13,7 @@ typedef struct context {
    int             debug_pipe[2];
    pthread_cond_t  processor_cond;
    pthread_cond_t  notifier_cond;
+   pthread_cond_t  terminator_cond;
    SocketMessages* socket_messages;
    Notifications*  notifications;
    Processes*      processes;
