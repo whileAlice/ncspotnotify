@@ -5,13 +5,22 @@
 #include <stdlib.h>
 
 Process*
+process_zero ()
+{
+   return NULL;
+}
+
+Process*
 process_create (pid_t pid, time_t timestamp)
 {
    Process* p = malloc (sizeof (Process));
    if (p == NULL)
+   {
       set_error ("malloc");
-   else
-      *p = (Process){ .pid = pid, .timestamp = timestamp };
+      return NULL;
+   }
+
+   *p = (Process){ .pid = pid, .timestamp = timestamp };
 
    return p;
 }
@@ -21,9 +30,12 @@ process_copy (Process* p)
 {
    Process* copy = malloc (sizeof (Process));
    if (copy == NULL)
+   {
       set_error ("malloc");
-   else
-      *copy = *p;
+      return NULL;
+   }
+
+   *copy = *p;
 
    return copy;
 }
@@ -31,7 +43,14 @@ process_copy (Process* p)
 void
 process_free (Process* p)
 {
+   if (p == NULL)
+      return;
+
+   free (p->notification_ptr);
+   p->notification_ptr = NULL;
+
    free (p);
+   p = NULL;
 }
 
 // NOTE: capacity determines the number of pids held for reap/SIGKILL.

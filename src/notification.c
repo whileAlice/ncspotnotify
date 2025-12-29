@@ -9,8 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define INITIAL_NOTIFICATIONS_CAPACITY 5
-#define MAX_NOTIFICATIONS_CAPACITY     20
+#define UNKNOWN_ARTIST "Unknown Artist"
 
 Notification*
 player_message_to_notification (PlayerMessage* message)
@@ -19,7 +18,10 @@ player_message_to_notification (PlayerMessage* message)
 
    Notification* n = calloc (1, sizeof (Notification));
    if (n == NULL)
-      set_error ("player_message_to_notification calloc");
+   {
+      set_error ("calloc");
+      return NULL;
+   }
 
    n->state   = message->mode->state;
    n->artists = artists_to_string (message->playable->artists);
@@ -36,14 +38,25 @@ notification_to_string (Notification* n)
 
    int length = snprintf (NULL, 0, NOTIFICATION_FORMAT, state, n->artists,
                           n->title, n->album);
+   if (length == -1)
+   {
+      set_error ("snprintf [1]");
+      return NULL;
+   }
 
    char* str = malloc (length * sizeof (char));
    if (str == NULL)
-      set_error ("notification_to_string malloc");
+   {
+      set_error ("malloc");
+      return NULL;
+   }
 
    if (snprintf (str, MESSAGE_BUFFER_SIZE, NOTIFICATION_FORMAT, state,
-                 n->artists, n->title, n->album) != length)
-      set_error ("notification_to_string snprintf");
+                 n->artists, n->title, n->album) == -1)
+   {
+      set_error ("snprintf [2]");
+      return NULL;
+   }
 
    return str;
 }
@@ -65,7 +78,10 @@ get_state_symbol (PlayerState state)
 
    char* str = strdup (buf);
    if (str == NULL)
-      set_error ("notification get_state_symbol strdup");
+   {
+      set_error ("strdup");
+      return NULL;
+   }
 
    return str;
 }
@@ -73,14 +89,29 @@ get_state_symbol (PlayerState state)
 char*
 artists_to_string (StringArray artists)
 {
+   char* str;
+
    if (artists.count < 1)
-      return strdup ("Unknown Artist");
+   {
+      str = strdup (UNKNOWN_ARTIST);
+      if (str == NULL)
+      {
+         set_error ("strdup");
+         return NULL;
+      }
+      return str;
+   }
 
    size_t length = (artists.count - 1) * strlen (", ") + 1;
    for (size_t i = 0; i < artists.count; ++i)
       length += strlen (artists.data[i]);
 
-   char* str = calloc (length, sizeof (char));
+   str = calloc (length, sizeof (char));
+   if (str == NULL)
+   {
+      set_error ("calloc");
+      return NULL;
+   }
 
    strcat (str, artists.data[0]);
 

@@ -13,7 +13,7 @@
    } BUFFER_TYPE;                                                                   \
                                                                                     \
    BUFFER_TYPE* BUFFER_FUNCTION_PREFIX##_init    (void);                            \
-   void         BUFFER_FUNCTION_PREFIX##_enqueue (BUFFER_TYPE* rb, DATA_TYPE item); \
+   int          BUFFER_FUNCTION_PREFIX##_enqueue (BUFFER_TYPE* rb, DATA_TYPE item); \
    DATA_TYPE    BUFFER_FUNCTION_PREFIX##_dequeue (BUFFER_TYPE* rb);                 \
    void         BUFFER_FUNCTION_PREFIX##_free    (BUFFER_TYPE* rb);
 // clang-format on
@@ -25,11 +25,17 @@
    {                                                                        \
       BUFFER_TYPE* rb = malloc (sizeof (BUFFER_TYPE));                      \
       if (rb == NULL)                                                       \
+      {                                                                     \
          set_error ("malloc");                                              \
+         return NULL;                                                       \
+      }                                                                     \
                                                                             \
       rb->data = calloc (INITIAL_BUFFER_CAPACITY, sizeof (DATA_TYPE));      \
       if (rb->data == NULL)                                                 \
+      {                                                                     \
          set_error ("data calloc");                                         \
+         return NULL;                                                       \
+      }                                                                     \
                                                                             \
       rb->count    = 0;                                                     \
       rb->head     = 0;                                                     \
@@ -39,7 +45,7 @@
       return rb;                                                            \
    }                                                                        \
                                                                             \
-   void BUFFER_FUNCTION_PREFIX##_enqueue (BUFFER_TYPE* rb, DATA_TYPE item)  \
+   int BUFFER_FUNCTION_PREFIX##_enqueue (BUFFER_TYPE* rb, DATA_TYPE item)   \
    {                                                                        \
       if (rb->capacity == rb->count && rb->capacity < MAX_BUFFER_CAPACITY)  \
       {                                                                     \
@@ -47,7 +53,10 @@
                                                                             \
          rb = realloc (rb, new_cap * sizeof (BUFFER_TYPE));                 \
          if (rb == NULL)                                                    \
+         {                                                                  \
             set_error ("realloc");                                          \
+            return -1;                                                      \
+         }                                                                  \
                                                                             \
          rb->capacity = new_cap;                                            \
       }                                                                     \
@@ -57,10 +66,15 @@
                                                                             \
       rb->data[rb->tail] = DATA_FUNCTION_PREFIX##_copy (item);              \
       if (rb->data[rb->tail] == NULL)                                       \
+      {                                                                     \
          set_error ("DATA_FUNCTION_PREFIX##_copy");                         \
+         return -1;                                                         \
+      }                                                                     \
                                                                             \
       rb->tail   = (rb->tail + 1) % rb->capacity;                           \
       rb->count += 1;                                                       \
+                                                                            \
+      return 0;                                                             \
    }                                                                        \
                                                                             \
    DATA_TYPE BUFFER_FUNCTION_PREFIX##_dequeue (BUFFER_TYPE* rb)             \
@@ -68,8 +82,11 @@
       assert (rb->data[rb->head] != NULL);                                  \
                                                                             \
       DATA_TYPE item = DATA_FUNCTION_PREFIX##_copy (rb->data[rb->head]);    \
-      if (item == NULL)                                                     \
+      if (item == DATA_FUNCTION_PREFIX##_zero ())                           \
+      {                                                                     \
          set_error ("DATA_FUNCTION_PREFIX##_copy");                         \
+         return DATA_FUNCTION_PREFIX##_zero ();                             \
+      }                                                                     \
                                                                             \
       rb->head   = (rb->head + 1) % rb->capacity;                           \
       rb->count -= 1;                                                       \

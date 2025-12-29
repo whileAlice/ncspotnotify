@@ -63,7 +63,7 @@ typedef struct player_message {
 PlayerMessage*  json_to_player_message  (char* json_string);
 PlayerMode*     parse_json_mode         (JsonMember* json_mode);
 PlayerPlayable* parse_json_playable     (JsonMember* json_playable);
-void            free_player_message     (PlayerMessage* pm);
+void            player_message_free     (PlayerMessage* pm);
 JsonMember*     get_child               (JsonNode*   parent, size_t index, const char* name);
 char*           get_child_string        (JsonMember* parent, size_t index, const char* name);
 double          get_child_number        (JsonMember* parent, size_t index, const char* name);
@@ -72,4 +72,4 @@ uint8_t         get_child_uint8_t       (JsonMember* parent, size_t index, const
 bool            get_child_boolean       (JsonMember* parent, size_t index, const char* name);
 StringArray     get_child_string_array  (JsonMember* parent, size_t index, const char* name);
 PlayableType    get_child_playable_type (JsonMember* parent, size_t index, const char* name);
-void            free_string_array       (StringArray s);
+void            string_array_free       (StringArray s);

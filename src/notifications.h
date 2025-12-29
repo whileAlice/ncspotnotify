@@ -4,6 +4,7 @@
 #include "ring_buffer.h"
 
 // clang-format off
+Notification* notification_zero (void);
 Notification* notification_copy (Notification* n);
 void          notification_free (Notification* n);
 

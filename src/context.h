@@ -1,6 +1,5 @@
 #pragma once
 
-#include "config.h"
 #include "notifications.h"
 #include "processes.h"
 #include "socket_messages.h"
@@ -16,7 +15,5 @@ typedef struct context {
    SocketMessages* socket_messages;
    Notifications*  notifications;
    Processes*      processes;
-   char            socket_message[MESSAGE_BUFFER_SIZE];
    bool            should_quit_app;
-   bool            is_verbose;
 } Context;

@@ -7,11 +7,20 @@
 #include <string.h>
 
 SocketMessage
+socket_message_zero ()
+{
+   return NULL;
+}
+
+SocketMessage
 socket_message_copy (SocketMessage sm)
 {
    char* copy = strdup (sm);
    if (copy == NULL)
+   {
       set_error ("strdup");
+      return NULL;
+   }
 
    return copy;
 }

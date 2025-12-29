@@ -1,6 +1,6 @@
 #include "error.h"
 
-#include "main_thread.h"
+#include "threads.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -56,7 +56,7 @@ set_error (const char* fmt, ...)
 
    if (length < 0)
    {
-      perror ("set_error NULL vsnprintf");
+      perror ("null vsnprintf");
       goto set_error_exit;
    }
 
@@ -66,13 +66,13 @@ set_error (const char* fmt, ...)
 
    if (error_str == NULL)
    {
-      perror ("set_error error_str calloc");
+      perror ("error str calloc");
       goto set_error_exit;
    }
 
    if (vsnprintf (error_str, length + 1, fmt, args2) < 0)
    {
-      perror ("set_error error_str vsnprintf");
+      perror ("error str vsnprintf");
       goto set_error_exit;
    }
 
@@ -99,7 +99,7 @@ set_error (const char* fmt, ...)
       thread_error = calloc (1, sizeof (Error));
       if (thread_error == NULL)
       {
-         perror ("set_error thread_error calloc");
+         perror ("thread error calloc");
          goto set_error_exit;
       }
 
@@ -111,7 +111,7 @@ set_error (const char* fmt, ...)
    ErrorNode* new_error_head = malloc (sizeof (ErrorNode));
    if (new_error_head == NULL)
    {
-      perror ("set_error new_error_head malloc");
+      perror ("new error head malloc");
       goto set_error_exit;
    }
 
@@ -127,7 +127,7 @@ set_error_exit:
 }
 
 void
-print_error (pthread_t tid)
+print_error (pthread_t tid, const char* thread_name)
 {
    Error* current = s_errors_head;
    Error* found   = NULL;
@@ -151,6 +151,9 @@ print_error (pthread_t tid)
    assert (en->message != NULL);
 
    fputs ("ERROR: ", stderr);
+   fputs (thread_name, stderr);
+   fputs (": ", stderr);
+
    fputs (en->message, stderr);
 
    while (en->next != NULL)
@@ -175,4 +178,21 @@ bool
 has_error (void)
 {
    return s_errors_head != NULL;
+}
+
+bool
+has_thread_error (pthread_t tid)
+{
+   Error* current = s_errors_head;
+   Error* next;
+
+   while (current != NULL)
+   {
+      if (current->tid == tid) return true;
+
+      next = current->next;
+      current = next;
+   }
+
+   return false;
 }

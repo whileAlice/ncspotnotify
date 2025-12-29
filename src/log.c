@@ -29,11 +29,12 @@ dbg (const char* fmt, ...)
    va_list args;
    va_start (args, fmt);
 
+   // TODO: think about how to propagate these errors
    if (vsnprintf (&buf[strlen (prefix)], MESSAGE_BUFFER_SIZE, fmt, args) < 0)
-      set_error ("dbg vsnprintf");
+      set_error ("vsnprintf");
 
    if (puts (buf) == EOF)
-      set_error ("dbg puts");
+      set_error ("puts");
 
    va_end (args);
 }
@@ -53,10 +54,10 @@ msg (const char* fmt, ...)
    va_start (args, fmt);
 
    if (vsnprintf (&buf[strlen (prefix)], MESSAGE_BUFFER_SIZE, fmt, args) < 0)
-      set_error ("msg vsnprintf");
+      set_error ("vsnprintf");
 
    if (puts (buf) == EOF)
-      set_error ("msg puts");
+      set_error ("puts");
 
    va_end (args);
 }

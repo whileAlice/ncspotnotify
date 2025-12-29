@@ -14,8 +14,9 @@ typedef struct error {
 } Error;
 
 // clang-format off
-void deinit_errors   (void);
-void deinit_messages (ErrorNode* error_node);
-void set_error       (const char* fmt, ...);
-void print_error     (pthread_t tid);
-bool has_error       (void);
+void deinit_errors    (void);
+void deinit_messages  (ErrorNode* error_node);
+void set_error        (const char* fmt, ...);
+void print_error      (pthread_t tid, const char* thread_name);
+bool has_error        (void);
+bool has_thread_error (pthread_t tid);

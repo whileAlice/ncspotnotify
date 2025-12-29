@@ -4,11 +4,8 @@
 #include "error.h"
 #include "log.h"
 #include "mutex.h"
-#include "notifier_thread.h"
-#include "processor_thread.h"
 #include "socket_messages.h"
-#include "socket_reader_thread.h"
-#include "terminator_thread.h"
+#include "threads.h"
 
 #include <errno.h>
 #include <pthread.h>
@@ -18,9 +15,7 @@
 #include <string.h>
 #include <unistd.h>
 
-pthread_mutex_t g_main_mutex;
-pthread_cond_t  g_main_cond;
-bool            g_should_exit;
+#define COND_COUNT 4
 
 int
 main (int argv, char** argc)
@@ -37,24 +32,45 @@ main (int argv, char** argc)
    Context* ctx = calloc (1, sizeof (Context));
    if (ctx == NULL)
    {
-      set_error ("main ctx calloc");
+      set_error ("ctx calloc");
       goto error_exit;
    }
 
    pthread_mutex_init (&ctx->mutex, NULL);
 
-   pthread_cond_init (&ctx->processor_cond, NULL);
-   pthread_cond_init (&ctx->notifier_cond, NULL);
-   pthread_cond_init (&ctx->terminator_cond, NULL);
+   pthread_cond_t* conds[COND_COUNT] = {
+      [MAIN_COND]       = &g_main_cond,
+      [PROCESSOR_COND]  = &ctx->processor_cond,
+      [NOTIFIER_COND]   = &ctx->notifier_cond,
+      [TERMINATOR_COND] = &ctx->terminator_cond,
+   };
 
-   ctx->notifications   = notifications_init ();
+   for (size_t i = 0; i < COND_COUNT; ++i)
+      pthread_cond_init (conds[i], NULL);
+
+   ctx->notifications = notifications_init ();
+   if (ctx->notifications == NULL)
+   {
+      set_error ("notifications init");
+      goto error_exit;
+   }
    ctx->socket_messages = socket_messages_init ();
-   ctx->processes       = processes_init ();
+   if (ctx->socket_messages == NULL)
+   {
+      set_error ("socket messages init");
+      goto error_exit;
+   }
+   ctx->processes = processes_init ();
+   if (ctx->processes == NULL)
+   {
+      set_error ("processes init");
+      goto error_exit;
+   }
 
    if (pipe (ctx->reader_pipe) == -1)
    {
-      set_error ("main reader_pipe");
-      exit (EXIT_FAILURE);
+      set_error ("reader pipe create");
+      goto error_exit;
    }
 
    sigset_t signal_set;
@@ -68,31 +84,20 @@ main (int argv, char** argc)
 
    pthread_sigmask (SIG_BLOCK, &signal_set, NULL);
 
-   pthread_t socket_reader_thread_id;
-   pthread_t processor_thread_id;
-   pthread_t notifier_thread_id;
-   pthread_t terminator_thread_id;
+   thread_fn* thread_fns               = get_thread_fns ();
+   pthread_t  thread_ids[THREAD_COUNT] = { 0 };
 
-   errno = pthread_create (&socket_reader_thread_id, NULL, socket_reader_thread,
-                           (void*)ctx);
-   if (errno != 0)
-      set_error ("main pthread_create (reader)");
+   for (size_t i = 0; i < THREAD_COUNT; ++i)
+   {
+      errno = pthread_create (&thread_ids[i], NULL, thread_fns[i], (void*)ctx);
+      if (errno != 0)
+      {
+         set_error ("pthread create %s", get_thread_name ((ThreadId)i));
+         goto error_exit;
+      }
+   }
 
-   errno =
-     pthread_create (&processor_thread_id, NULL, processor_thread, (void*)ctx);
-   if (errno != 0)
-      set_error ("main pthread_create (processor)");
-
-   errno =
-     pthread_create (&notifier_thread_id, NULL, notifier_thread, (void*)ctx);
-   if (errno != 0)
-      set_error ("main pthread_create (notifier)");
-
-   errno = pthread_create (&terminator_thread_id, NULL, terminator_thread,
-                           (void*)ctx);
-   if (errno != 0)
-      set_error ("main pthread_create (terminator)");
-
+   // TODO: replace this with cond wait
    sigwait (&signal_set, &received_signal);
 
    dbg ("received signal: '%s'", strsignal (received_signal));
@@ -100,55 +105,71 @@ main (int argv, char** argc)
 
    IN_LOCK (&ctx->mutex,
       ctx->should_quit_app = true;
-      dbg ("main: %d\n", ctx->should_quit_app);
    );
 
    // wake up threads
    const uint8_t byte = 0;
 
    if (write (ctx->reader_pipe[1], &byte, 1) != 1)
-      set_error ("main write (reader_pipe write end)");
+   {
+      set_error ("reader pipe write");
+      goto error_exit;
+   }
 
    IN_LOCK (&ctx->mutex,
    {
-      pthread_cond_broadcast (&ctx->processor_cond);
-      pthread_cond_broadcast (&ctx->notifier_cond);
-      pthread_cond_broadcast (&ctx->terminator_cond);
+      for (size_t i = 0; i < COND_COUNT; ++i)
+         pthread_cond_broadcast (conds[i]);
    });
 
-   pthread_join (terminator_thread_id, NULL);
-   pthread_join (notifier_thread_id, NULL);
-   pthread_join (processor_thread_id, NULL);
-   pthread_join (socket_reader_thread_id, NULL);
+   for (size_t i = 0; i < THREAD_COUNT; ++i)
+   {
+      if (pthread_join (thread_ids[i], NULL) != 0)
+      {
+         set_error ("pthread join %s", get_thread_name ((ThreadId)i));
+         goto error_exit;
+      }
+   }
 
    if (close (ctx->reader_pipe[0]) == -1)
-      set_error ("main close (reader_pipe read end)");
+   {
+      set_error ("reader pipe read end close");
+      goto error_exit;
+   }
    if (close (ctx->reader_pipe[1]) == -1)
-      set_error ("main close (reader_pipe write end)");
+   {
+      set_error ("reader pipe write end close");
+      goto error_exit;
+   }
 
-   errno = pthread_cond_destroy (&ctx->notifier_cond);
-   if (errno != 0)
-      set_error ("main pthread_reader_cond_destroy");
-
-   errno = pthread_cond_destroy (&ctx->processor_cond);
-   if (errno != 0)
-      set_error ("main pthread_notifier_cond_destroy");
-
-   errno = pthread_cond_destroy (&ctx->terminator_cond);
-   if (errno != 0)
-      set_error ("main pthread_terminator_cond_destroy");
+   for (int i = 0; i < THREAD_COUNT; ++i)
+   {
+      errno = pthread_cond_destroy (conds[i]);
+      if (errno != 0)
+      {
+         set_error ("pthread cond destroy %s", get_cond_name ((CondId)i));
+         goto error_exit;
+      }
+   }
 
    errno = pthread_mutex_destroy (&ctx->mutex);
    if (errno != 0)
-      set_error ("main pthread_mutex_destroy");
+   {
+      set_error ("pthread mutex destroy");
+      goto error_exit;
+   }
 
    free (ctx);
 
 error_exit:
    if (has_error ())
    {
-      print_error (pthread_self ());
-      print_error (socket_reader_thread_id);
+      print_error (pthread_self (), "main");
+      for (size_t i = 0; i < THREAD_COUNT; ++i)
+      {
+         print_error (thread_ids[i], get_thread_name ((ThreadId)i));
+      }
+
       return EXIT_FAILURE;
    }
 
