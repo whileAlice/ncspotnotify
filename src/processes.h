@@ -1,7 +1,8 @@
 #pragma once
 
+#include "ring_buffer.h"
+
 #include <spawn.h>
-#include <stddef.h>
 #include <time.h>
 
 typedef struct process {
@@ -9,10 +10,10 @@ typedef struct process {
    time_t timestamp;
 } Process;
 
-typedef struct processes {
-   Process* data;
-   size_t   count;
-   size_t   head;
-   size_t   tail;
-   size_t   capacity;
-} Processes;
+// clang-format off
+Process* process_create (pid_t pid, time_t timestamp);
+Process* process_copy   (Process* p);
+void     process_free   (Process* p);
+
+RING_BUFFER_DECLARE (Process*,  process,
+                     Processes, processes)

@@ -2,11 +2,10 @@
 
 #include "config.h"
 #include "notifications.h"
+#include "processes.h"
 #include "socket_messages.h"
 
 #include <pthread.h>
-
-typedef struct processes Processes;
 
 typedef struct context {
    pthread_mutex_t mutex;

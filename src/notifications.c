@@ -40,4 +40,5 @@ notification_free (Notification* n)
    free (n);
 }
 
-RING_BUFFER_DEFINE (Notification*, notification, Notifications, notifications);
+RING_BUFFER_DEFINE (Notification*, notification, Notifications, notifications,
+                    5, 20);

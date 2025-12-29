@@ -23,4 +23,4 @@ socket_message_free (SocketMessage sm)
 }
 
 RING_BUFFER_DEFINE (SocketMessage, socket_message, SocketMessages,
-                    socket_messages);
+                    socket_messages, 5, 20);
