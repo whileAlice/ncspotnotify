@@ -1,7 +1,6 @@
 #include "args.h"
 #include "config.h"
 #include "context.h"
-#include "debug_thread.h"
 #include "error.h"
 #include "log.h"
 #include "mutex.h"
@@ -52,12 +51,6 @@ main (int argv, char** argc)
    ctx->socket_messages = socket_messages_init ();
    ctx->processes       = processes_init ();
 
-   if (pipe (ctx->debug_pipe) == -1)
-   {
-      set_error ("main debug_pipe");
-      exit (EXIT_FAILURE);
-   }
-
    if (pipe (ctx->reader_pipe) == -1)
    {
       set_error ("main reader_pipe");
@@ -79,7 +72,6 @@ main (int argv, char** argc)
    pthread_t processor_thread_id;
    pthread_t notifier_thread_id;
    pthread_t terminator_thread_id;
-   pthread_t debug_thread_id;
 
    errno = pthread_create (&socket_reader_thread_id, NULL, socket_reader_thread,
                            (void*)ctx);
@@ -101,10 +93,6 @@ main (int argv, char** argc)
    if (errno != 0)
       set_error ("main pthread_create (terminator)");
 
-   errno = pthread_create (&debug_thread_id, NULL, debug_thread, (void*)ctx);
-   if (errno != 0)
-      set_error ("main pthread_create (debug)");
-
    sigwait (&signal_set, &received_signal);
 
    dbg ("received signal: '%s'", strsignal (received_signal));
@@ -118,9 +106,6 @@ main (int argv, char** argc)
    // wake up threads
    const uint8_t byte = 0;
 
-   if (write (ctx->debug_pipe[1], &byte, 1) != 1)
-      set_error ("main write (debug_pipe write end)");
-
    if (write (ctx->reader_pipe[1], &byte, 1) != 1)
       set_error ("main write (reader_pipe write end)");
 
@@ -131,16 +116,11 @@ main (int argv, char** argc)
       pthread_cond_broadcast (&ctx->terminator_cond);
    });
 
-   pthread_join (debug_thread_id, NULL);
    pthread_join (terminator_thread_id, NULL);
    pthread_join (notifier_thread_id, NULL);
    pthread_join (processor_thread_id, NULL);
    pthread_join (socket_reader_thread_id, NULL);
 
-   if (close (ctx->debug_pipe[0]) == -1)
-      set_error ("main close (debug_pipe read end)");
-   if (close (ctx->debug_pipe[1]) == -1)
-      set_error ("main close (debug_pipe write end)");
    if (close (ctx->reader_pipe[0]) == -1)
       set_error ("main close (reader_pipe read end)");
    if (close (ctx->reader_pipe[1]) == -1)

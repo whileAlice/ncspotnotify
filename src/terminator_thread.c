@@ -44,7 +44,7 @@ terminator_thread (void* args)
       if (now - p->timestamp < CMD_TIMEOUT)
       {
          unsigned int wait = (unsigned int)(CMD_TIMEOUT - (now - p->timestamp));
-         dbg ("cmd with pid %d before timeout, waiting %d seconds...", p->pid,
+         dbg ("process with pid %d: waiting %d seconds for timeout...", p->pid,
               wait);
          sleep (wait);
       }
@@ -53,19 +53,19 @@ terminator_thread (void* args)
       pid_t res = waitpid (p->pid, &status, WNOHANG);
       if (res == -1 && errno == ECHILD)
       {
-         dbg ("cmd with pid %d not found", p->pid);
+         dbg ("process with pid %d not found", p->pid);
          goto free;
       }
 
       if (res == p->pid)
       {
-         dbg ("cmd with pid %d terminated on its own", p->pid);
+         dbg ("process with pid %d terminated on its own", p->pid);
          goto free;
       }
 
       if (res == 0)
       {
-         dbg ("cmd with pid %d not terminated, sending SIGKILL", p->pid);
+         dbg ("process with pid %d not terminated, sending SIGKILL", p->pid);
          kill (p->pid, SIGKILL);
          waitpid (p->pid, &status, 0);
          goto free;

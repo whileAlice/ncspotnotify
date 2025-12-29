@@ -10,7 +10,6 @@
 typedef struct context {
    pthread_mutex_t mutex;
    int             reader_pipe[2];
-   int             debug_pipe[2];
    pthread_cond_t  processor_cond;
    pthread_cond_t  notifier_cond;
    pthread_cond_t  terminator_cond;
