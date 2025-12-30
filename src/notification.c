@@ -44,7 +44,7 @@ notification_to_string (Notification* n)
       return NULL;
    }
 
-   char* str = malloc (length * sizeof (char));
+   char* str = malloc (length * sizeof (char) + 1);
    if (str == NULL)
    {
       set_error ("malloc");
@@ -57,6 +57,8 @@ notification_to_string (Notification* n)
       set_error ("snprintf [2]");
       return NULL;
    }
+
+   free (state);
 
    return str;
 }

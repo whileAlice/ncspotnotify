@@ -12,6 +12,9 @@
 #include <pthread.h>
 #include <spawn.h>
 #include <stdlib.h>
+#include <string.h>
+
+#define ARGC 3
 
 extern char** environ;
 
@@ -23,15 +26,6 @@ notifier_thread (void* args)
 
    pid_t  child_pid;
    char** argv;
-
-   argv = calloc (2, sizeof (char*));
-   if (argv == NULL)
-   {
-      set_error ("calloc");
-      goto close;
-   }
-
-   argv[0] = NOTIFICATION_CMD;
 
    while (!ctx->should_quit_app)
    {
@@ -59,12 +53,21 @@ notifier_thread (void* args)
       if (notification == NULL)
          continue;
 
+      argv = calloc (ARGC, sizeof (char*));
+      if (argv == NULL)
+      {
+         set_error ("argv calloc");
+         goto close;
+      }
+
+      argv[0] = strdup (NOTIFICATION_CMD);
       argv[1] = notification_to_string (notification);
       if (argv[1] == NULL)
       {
          set_error ("notification to string");
          goto close;
       }
+      argv[2] = NULL;
 
       notification_free (notification);
 
@@ -75,12 +78,21 @@ notifier_thread (void* args)
          goto close;
       }
 
-      time_t   timestamp        = time (NULL);
-      Process* process          = process_create (child_pid, timestamp);
-      process->notification_ptr = argv[1];
+      time_t   timestamp = time (NULL);
+
+      Process* process   = malloc (sizeof (Process));
+      if (process == NULL)
+      {
+         set_error ("process malloc");
+         goto close;
+      }
+
+      *process =
+        (Process){ .pid = child_pid, .timestamp = timestamp, .argv = argv };
 
       IN_LOCK (&ctx->mutex,
       {
+         // takes ownership of process
          if (processes_enqueue (ctx->processes, process) == -1)
          {
             set_error ("processes enqueue");
@@ -90,8 +102,6 @@ notifier_thread (void* args)
          pthread_cond_broadcast (&ctx->terminator_cond);
       });
    }
-
-   free (argv);
 
 close:
    dbg ("closing notifier thread gracefully");

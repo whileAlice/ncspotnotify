@@ -83,9 +83,12 @@ socket_reader_thread (void* args)
 
          buf[length - 1] = '\0';
 
+         char* socket_message = strdup (buf);
          IN_LOCK (&ctx->mutex,
          {
-            if (socket_messages_enqueue (ctx->socket_messages, buf) == -1)
+            // takes ownership of socket message
+            if (socket_messages_enqueue (ctx->socket_messages,
+                                         socket_message) == -1)
             {
                set_error ("socket messages enqueue");
                pthread_mutex_unlock (&ctx->mutex);

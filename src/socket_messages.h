@@ -4,10 +4,7 @@
 
 typedef char* SocketMessage;
 
-// clang-format off
-void          socket_message_free (SocketMessage sm);
-SocketMessage socket_message_copy (SocketMessage sm);
-SocketMessage socket_message_zero ();
+void socket_message_free (SocketMessage sm);
 
-RING_BUFFER_DECLARE (SocketMessage,  socket_message,
-                     SocketMessages, socket_messages);
+RING_BUFFER_DECLARE (SocketMessage, socket_message, SocketMessages,
+                     socket_messages);

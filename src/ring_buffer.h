@@ -1,5 +1,9 @@
+#include "error.h" // IWYU pragma: keep <- clangd, are you ok? -_-
+
 #include <assert.h>
 #include <stdlib.h>
+
+// ring buffer passes ownership of data to dequeue caller
 
 // clang-format off
 #define RING_BUFFER_DECLARE(DATA_TYPE, DATA_FUNCTION_PREFIX, BUFFER_TYPE,           \
@@ -61,15 +65,7 @@
          rb->capacity = new_cap;                                            \
       }                                                                     \
                                                                             \
-      if (rb->data[rb->tail] != NULL)                                       \
-         DATA_FUNCTION_PREFIX##_free (rb->data[rb->tail]);                  \
-                                                                            \
-      rb->data[rb->tail] = DATA_FUNCTION_PREFIX##_copy (item);              \
-      if (rb->data[rb->tail] == NULL)                                       \
-      {                                                                     \
-         set_error ("DATA_FUNCTION_PREFIX##_copy");                         \
-         return -1;                                                         \
-      }                                                                     \
+      rb->data[rb->tail] = item;                                            \
                                                                             \
       rb->tail   = (rb->tail + 1) % rb->capacity;                           \
       rb->count += 1;                                                       \
@@ -81,12 +77,8 @@
    {                                                                        \
       assert (rb->data[rb->head] != NULL);                                  \
                                                                             \
-      DATA_TYPE item = DATA_FUNCTION_PREFIX##_copy (rb->data[rb->head]);    \
-      if (item == DATA_FUNCTION_PREFIX##_zero ())                           \
-      {                                                                     \
-         set_error ("DATA_FUNCTION_PREFIX##_copy");                         \
-         return DATA_FUNCTION_PREFIX##_zero ();                             \
-      }                                                                     \
+      DATA_TYPE item     = rb->data[rb->head];                              \
+      rb->data[rb->head] = NULL;                                            \
                                                                             \
       rb->head   = (rb->head + 1) % rb->capacity;                           \
       rb->count -= 1;                                                       \
@@ -103,5 +95,5 @@
          }                                                                  \
       }                                                                     \
       free (rb->data);                                                      \
-      rb->data = NULL;                                                      \
+      free (rb);                                                            \
    }

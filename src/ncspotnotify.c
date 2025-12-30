@@ -159,6 +159,10 @@ main (int argv, char** argc)
       goto error_exit;
    }
 
+   notifications_free (ctx->notifications);
+   socket_messages_free (ctx->socket_messages);
+   processes_free (ctx->processes);
+
    free (ctx);
 
 error_exit:

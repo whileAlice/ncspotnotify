@@ -19,7 +19,7 @@ processor_thread (void* args)
 
    while (!ctx->should_quit_app)
    {
-      char* socket_message_json = NULL;
+      SocketMessage socket_message_json = NULL;
 
       IN_LOCK (&ctx->mutex,
       {
@@ -64,6 +64,7 @@ processor_thread (void* args)
 
          IN_LOCK (&ctx->mutex,
          {
+            // takes ownership of notification
             if (notifications_enqueue (ctx->notifications, n) == -1)
             {
                set_error ("notifications enqueue");
@@ -72,12 +73,10 @@ processor_thread (void* args)
             }
             pthread_cond_broadcast (&ctx->notifier_cond);
          });
-
-         notification_free (n);
       }
 
       player_message_free (pm);
-      free (socket_message_json);
+      socket_message_free (socket_message_json);
    }
 
 close:

@@ -298,4 +298,6 @@ string_array_free (StringArray s)
 {
    for (size_t i = 0; i < s.count; ++i)
       free (s.data[i]);
+
+   free (s.data);
 }
