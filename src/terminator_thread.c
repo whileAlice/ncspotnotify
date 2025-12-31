@@ -24,34 +24,38 @@ terminator_thread (void* args)
    Context* ctx = (Context*)args;
    assert (ctx->processes != NULL);
 
-   IN_LOCK(&g_main_mutex,
+   IN_LOCK(&g_mutex,
    {
-      ctx->ready_thread_count += 1;
+      g_ready_thread_count += 1;
       pthread_cond_broadcast (&g_main_cond);
 
       dbg ("waiting for other threads...");
-      while ((ctx->ready_thread_count < THREAD_COUNT) && !g_is_failure)
-      {
-         pthread_cond_wait (&g_main_cond, &g_main_mutex);
-      }
+      while ((g_ready_thread_count < THREAD_COUNT) && !g_should_quit_app)
+         pthread_cond_wait (&g_main_cond, &g_mutex);
 
-      if (g_is_failure)
+      if (g_should_quit_app)
       {
-         dbg ("fatal failure! quitting...");
+         pthread_mutex_unlock (&g_mutex);
          goto close;
       }
    });
 
-   while (!ctx->should_quit_app)
+   while (true)
    {
       Process* process = NULL;
 
-      IN_LOCK (&ctx->mutex,
+      IN_LOCK (&g_mutex,
       {
+         if (g_should_quit_app)
+         {
+            pthread_mutex_unlock (&g_mutex);
+            goto close;
+         }
+
          if (ctx->processes->count == 0)
          {
-            dbg ("terminator waiting for processes");
-            pthread_cond_wait (&ctx->terminator_cond, &ctx->mutex);
+            dbg ("waiting for processes...");
+            pthread_cond_wait (&ctx->terminator_cond, &g_mutex);
          }
          else
          {
@@ -59,7 +63,7 @@ terminator_thread (void* args)
             if (process == NULL)
             {
                set_error ("processes dequeue");
-               pthread_mutex_unlock (&ctx->mutex);
+               pthread_mutex_unlock (&g_mutex);
                goto close;
             }
          }
@@ -111,7 +115,13 @@ terminator_thread (void* args)
    }
 
 close:
-   dbg ("closing terminator thread gracefully");
+   dbg ("returning...");
+
+   IN_LOCK(&g_mutex,
+   {
+      g_should_quit_app = true;
+      pthread_cond_broadcast (&g_main_cond);
+   });
 
    return NULL;
 }

@@ -12,8 +12,6 @@
 
 static Error* s_errors_head = NULL;
 
-bool g_is_failure;
-
 void
 deinit_errors (void)
 {
@@ -47,10 +45,10 @@ deinit_messages (ErrorNode* error_node)
 void
 set_error (const char* fmt, ...)
 {
-   if (g_is_failure)
+   if (g_should_quit_app)
       return;
 
-   pthread_mutex_lock (&g_main_mutex);
+   pthread_mutex_lock (&g_mutex);
 
    va_list args1, args2;
 
@@ -128,10 +126,10 @@ set_error_exit:
    if (!g_is_main_waiting)
       abort ();
 
-   g_is_failure = true;
+   g_should_quit_app = true;
    pthread_cond_broadcast (&g_main_cond);
 
-   pthread_mutex_unlock (&g_main_mutex);
+   pthread_mutex_unlock (&g_mutex);
 }
 
 void

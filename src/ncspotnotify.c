@@ -24,17 +24,17 @@ main (int argv, char** argc)
    if (access (SOCKET_PATH, F_OK) < 0)
    {
       set_error ("socket not found at %s", SOCKET_PATH);
-      goto error_exit;
+      goto exit;
    }
 
    Context* ctx = calloc (1, sizeof (Context));
    if (ctx == NULL)
    {
       set_error ("ctx calloc");
-      goto error_exit;
+      goto exit;
    }
 
-   pthread_mutex_init (&ctx->mutex, NULL);
+   pthread_mutex_init (&g_mutex, NULL);
 
    pthread_cond_t* conds[COND_COUNT] = {
       [MAIN_COND]       = &g_main_cond,
@@ -50,26 +50,26 @@ main (int argv, char** argc)
    if (ctx->notifications == NULL)
    {
       set_error ("notifications init");
-      goto error_exit;
+      goto exit;
    }
    ctx->socket_messages = socket_messages_init ();
    if (ctx->socket_messages == NULL)
    {
       set_error ("socket messages init");
-      goto error_exit;
+      goto exit;
    }
    ctx->processes = processes_init ();
    if (ctx->processes == NULL)
    {
       set_error ("processes init");
-      goto error_exit;
+      goto exit;
    }
 
    if (pipe (ctx->poller_pipe) == -1)
    {
       set_error ("poller pipe create");
 
-      goto error_exit;
+      goto exit;
    }
 
    sigemptyset (&ctx->signal_set);
@@ -77,7 +77,7 @@ main (int argv, char** argc)
    sigaddset (&ctx->signal_set, SIGINT);
    sigaddset (&ctx->signal_set, SIGTERM);
 
-   sigprocmask (SIG_BLOCK, &ctx->signal_set, NULL);
+   pthread_sigmask (SIG_BLOCK, &ctx->signal_set, NULL);
 
    thread_fn* thread_fns     = get_thread_fns ();
    g_thread_ids[MAIN_THREAD] = pthread_self ();
@@ -89,42 +89,22 @@ main (int argv, char** argc)
       if (errno != 0)
       {
          set_error ("pthread create %s", get_thread_name ((ThreadIdx)i));
-         goto error_exit;
+         goto exit;
       }
    }
 
-   IN_LOCK(&g_main_mutex,
+   IN_LOCK(&g_mutex,
    {
-      ctx->ready_thread_count += 1;
-      g_is_main_waiting        = true;
+      g_ready_thread_count += 1;
+      g_is_main_waiting     = true;
       pthread_cond_broadcast (&g_main_cond);
 
-      dbg ("waiting for other threads...");
-      while ((ctx->ready_thread_count < THREAD_COUNT) && !g_is_failure)
-      {
-         pthread_cond_wait (&g_main_cond, &g_main_mutex);
-      }
+      dbg ("waiting for the quit flag...");
+      while (!g_should_quit_app)
+         pthread_cond_wait (&g_main_cond, &g_mutex);
    });
 
-   if (g_is_failure)
-   {
-      dbg ("fatal failure! quitting...");
-      goto error_exit;
-   }
-
-   dbg ("all threads ready!");
-
-   IN_LOCK(&g_main_mutex,
-   {
-      while (g_is_failure == false)
-      {
-         pthread_cond_wait (&g_main_cond, &g_main_mutex);
-      }
-   });
-
-   IN_LOCK (&ctx->mutex,
-      ctx->should_quit_app = true;
-   );
+   msg ("exiting...");
 
    // wake up threads
    const uint8_t byte = 0;
@@ -132,34 +112,32 @@ main (int argv, char** argc)
    if (write (ctx->poller_pipe[1], &byte, 1) != 1)
    {
       set_error ("poller pipe write");
-      goto error_exit;
+      goto exit;
    }
 
-   IN_LOCK (&ctx->mutex,
-   {
-
+   IN_LOCK (&g_mutex,
       for (size_t i = 0; i < COND_COUNT; ++i)
          pthread_cond_broadcast (conds[i]);
-   });
+   );
 
    for (size_t i = MAIN_THREAD + 1; i < THREAD_COUNT; ++i)
    {
       if (pthread_join (g_thread_ids[i], NULL) != 0)
       {
          set_error ("pthread join %s", get_thread_name ((ThreadIdx)i));
-         goto error_exit;
+         goto exit;
       }
    }
 
    if (close (ctx->poller_pipe[0]) == -1)
    {
       set_error ("poller pipe read end close");
-      goto error_exit;
+      goto exit;
    }
    if (close (ctx->poller_pipe[1]) == -1)
    {
       set_error ("poller pipe write end close");
-      goto error_exit;
+      goto exit;
    }
 
    for (int i = 0; i < COND_COUNT; ++i)
@@ -168,15 +146,15 @@ main (int argv, char** argc)
       if (errno != 0)
       {
          set_error ("pthread cond destroy %s", get_cond_name ((CondIdx)i));
-         goto error_exit;
+         goto exit;
       }
    }
 
-   errno = pthread_mutex_destroy (&ctx->mutex);
+   errno = pthread_mutex_destroy (&g_mutex);
    if (errno != 0)
    {
       set_error ("pthread mutex destroy");
-      goto error_exit;
+      goto exit;
    }
 
    notifications_free (ctx->notifications);
@@ -185,7 +163,7 @@ main (int argv, char** argc)
 
    free (ctx);
 
-error_exit:
+exit:
    if (has_error ())
    {
       for (size_t i = 0; i < THREAD_COUNT; ++i)

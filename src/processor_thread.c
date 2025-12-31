@@ -18,34 +18,38 @@ processor_thread (void* args)
    Context* ctx = (Context*)args;
    assert (ctx->socket_messages != NULL);
 
-   IN_LOCK(&g_main_mutex,
+   IN_LOCK(&g_mutex,
    {
-      ctx->ready_thread_count += 1;
+      g_ready_thread_count += 1;
       pthread_cond_broadcast (&g_main_cond);
 
       dbg ("waiting for other threads...");
-      while ((ctx->ready_thread_count < THREAD_COUNT) && !g_is_failure)
-      {
-         pthread_cond_wait (&g_main_cond, &g_main_mutex);
-      }
+      while ((g_ready_thread_count < THREAD_COUNT) && !g_should_quit_app)
+         pthread_cond_wait (&g_main_cond, &g_mutex);
 
-      if (g_is_failure)
+      if (g_should_quit_app)
       {
-         dbg ("fatal failure! quitting...");
+         pthread_mutex_unlock (&g_mutex);
          goto close;
       }
    });
 
-   while (!ctx->should_quit_app)
+   while (true)
    {
       SocketMessage socket_message_json = NULL;
 
-      IN_LOCK (&ctx->mutex,
+      IN_LOCK (&g_mutex,
       {
+         if (g_should_quit_app)
+         {
+            pthread_mutex_unlock (&g_mutex);
+            goto close;
+         }
+
          if (ctx->socket_messages->count == 0)
          {
-            dbg ("processor waiting for socket message");
-            pthread_cond_wait (&ctx->processor_cond, &ctx->mutex);
+            dbg ("waiting for socket messages...");
+            pthread_cond_wait (&ctx->processor_cond, &g_mutex);
          }
          else
          {
@@ -53,7 +57,7 @@ processor_thread (void* args)
             if (socket_message_json == NULL)
             {
                set_error ("socket messages dequeue");
-               pthread_mutex_unlock (&ctx->mutex);
+               pthread_mutex_unlock (&g_mutex);
                goto close;
             }
          }
@@ -81,13 +85,13 @@ processor_thread (void* args)
             goto close;
          }
 
-         IN_LOCK (&ctx->mutex,
+         IN_LOCK (&g_mutex,
          {
             // takes ownership of notification
             if (notifications_enqueue (ctx->notifications, n) == -1)
             {
                set_error ("notifications enqueue");
-               pthread_mutex_unlock (&ctx->mutex);
+               pthread_mutex_unlock (&g_mutex);
                goto close;
             }
             pthread_cond_broadcast (&ctx->notifier_cond);
@@ -99,13 +103,13 @@ processor_thread (void* args)
    }
 
 close:
-   dbg ("closing processor thread gracefully");
+   dbg ("returning...");
 
-   // FIXME: propagate this appropriately
-   if (has_thread_error (pthread_self ()))
-      IN_LOCK (&ctx->mutex,
-         ctx->should_quit_app = true;
-      );
+   IN_LOCK(&g_mutex,
+   {
+      g_should_quit_app = true;
+      pthread_cond_broadcast (&g_main_cond);
+   });
 
    return NULL;
 }

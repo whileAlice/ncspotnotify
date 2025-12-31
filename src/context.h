@@ -7,8 +7,6 @@
 #include <pthread.h>
 
 typedef struct context {
-   pthread_mutex_t mutex;
-   size_t          ready_thread_count;
    int             poller_pipe[2];
    sigset_t        signal_set;
    pthread_cond_t  processor_cond;
@@ -17,5 +15,4 @@ typedef struct context {
    SocketMessages* socket_messages;
    Notifications*  notifications;
    Processes*      processes;
-   bool            should_quit_app;
 } Context;

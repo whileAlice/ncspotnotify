@@ -8,10 +8,12 @@
 #include <assert.h>
 #include <pthread.h>
 
-pthread_mutex_t g_main_mutex;
+pthread_mutex_t g_mutex;
 pthread_cond_t  g_main_cond;
 pthread_t       g_thread_ids[THREAD_COUNT];
+size_t          g_ready_thread_count;
 bool            g_is_main_waiting;
+bool            g_should_quit_app;
 
 static thread_fn s_thread_fns[THREAD_COUNT] = {
    [POLLER_THREAD]     = poller_thread,
@@ -45,10 +47,10 @@ const char*
 thread_id_to_name (pthread_t thread_id)
 {
    for (size_t i = 0; i < THREAD_COUNT; ++i)
-      if pthread_equal (g_thread_ids[i], thread_id)
+      if (pthread_equal (g_thread_ids[i], thread_id))
          return get_thread_name ((ThreadIdx)i);
 
-   return NULL;
+   return "unknown";
 }
 
 const char*

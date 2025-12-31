@@ -29,20 +29,18 @@ poller_thread (void* args)
 {
    Context* ctx = (Context*)args;
 
-   IN_LOCK(&g_main_mutex,
+   IN_LOCK(&g_mutex,
    {
-      ctx->ready_thread_count += 1;
+      g_ready_thread_count += 1;
       pthread_cond_broadcast (&g_main_cond);
 
       dbg ("waiting for other threads...");
-      while ((ctx->ready_thread_count < THREAD_COUNT) && !g_is_failure)
-      {
-         pthread_cond_wait (&g_main_cond, &g_main_mutex);
-      }
+      while ((g_ready_thread_count < THREAD_COUNT) && !g_should_quit_app)
+         pthread_cond_wait (&g_main_cond, &g_mutex);
 
-      if (g_is_failure)
+      if (g_should_quit_app)
       {
-         dbg ("fatal failure! quitting...");
+         pthread_mutex_unlock (&g_mutex);
          goto close;
       }
    });
@@ -86,16 +84,22 @@ poller_thread (void* args)
    char buf[MESSAGE_BUFFER_SIZE];
    while (true)
    {
-      dbg ("waiting for socket...");
+      IN_LOCK(&g_mutex,
+      {
+         if (g_should_quit_app)
+         {
+            pthread_mutex_unlock (&g_mutex);
+            goto close;
+         }
+      });
+
+      dbg ("polling FDs...");
 
       if (poll (poll_fds, FD_COUNT, -1) == -1)
       {
          set_error ("poll");
          goto close;
       }
-
-      if (ctx->should_quit_app)
-         break;
 
       if (poll_fds[SOCKET_FD].revents & POLLIN)
       {
@@ -115,14 +119,14 @@ poller_thread (void* args)
          buf[length - 1] = '\0';
 
          char* socket_message = strdup (buf);
-         IN_LOCK (&ctx->mutex,
+         IN_LOCK (&g_mutex,
          {
             // takes ownership of socket message
             if (socket_messages_enqueue (ctx->socket_messages,
                                          socket_message) == -1)
             {
                set_error ("socket messages enqueue");
-               pthread_mutex_unlock (&ctx->mutex);
+               pthread_mutex_unlock (&g_mutex);
                goto close;
             };
             pthread_cond_broadcast (&ctx->processor_cond);
@@ -131,7 +135,7 @@ poller_thread (void* args)
 
       if (poll_fds[PIPE_FD].revents & POLLIN)
       {
-         ssize_t length = read (poll_fds[SOCKET_FD].fd, buf, sizeof (buf) - 1);
+         ssize_t length = read (poll_fds[PIPE_FD].fd, buf, sizeof (buf) - 1);
          if (length == -1)
          {
             set_error ("read pipe");
@@ -164,7 +168,10 @@ poller_thread (void* args)
 
          if (signal_info.ssi_signo == SIGINT ||
              signal_info.ssi_signo == SIGTERM)
+         {
+            msg ("app interrupted by signal");
             goto close;
+         }
       }
    }
 
@@ -172,11 +179,13 @@ poller_thread (void* args)
       set_error ("socket close");
 
 close:
-   dbg ("closing poller gracefully");
+   dbg ("returning...");
 
-   // TODO: change this to cond broadcast
-   if (has_thread_error (pthread_self ()))
-      kill (getpid (), SIGUSR1);
+   IN_LOCK(&g_mutex,
+   {
+      g_should_quit_app = true;
+      pthread_cond_broadcast (&g_main_cond);
+   });
 
    return NULL;
 }

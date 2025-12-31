@@ -19,10 +19,12 @@ typedef enum cond_pos {
    COND_COUNT,
 } CondIdx;
 
-extern pthread_mutex_t g_main_mutex;
+extern pthread_mutex_t g_mutex;
 extern pthread_cond_t  g_main_cond;
 extern pthread_t       g_thread_ids[THREAD_COUNT];
+extern size_t          g_ready_thread_count;
 extern bool            g_is_main_waiting;
+extern bool            g_should_quit_app;
 
 // clang-format off
 thread_fn*  get_thread_fns    (void);
