@@ -7,6 +7,7 @@
 #include "mutex.h"
 #include "notification.h"
 #include "notifications.h"
+#include "threads.h"
 
 #include <assert.h>
 #include <pthread.h>
@@ -23,6 +24,24 @@ notifier_thread (void* args)
 {
    Context* ctx = (Context*)args;
    assert (ctx->notifications != NULL);
+
+   IN_LOCK(&g_main_mutex,
+   {
+      ctx->ready_thread_count += 1;
+      pthread_cond_broadcast (&g_main_cond);
+
+      dbg ("waiting for other threads...");
+      while ((ctx->ready_thread_count < THREAD_COUNT) && !g_is_failure)
+      {
+         pthread_cond_wait (&g_main_cond, &g_main_mutex);
+      }
+
+      if (g_is_failure)
+      {
+         dbg ("fatal failure! quitting...");
+         goto close;
+      }
+   });
 
    pid_t  child_pid;
    char** argv;
@@ -78,9 +97,9 @@ notifier_thread (void* args)
          goto close;
       }
 
-      time_t   timestamp = time (NULL);
+      time_t timestamp = time (NULL);
 
-      Process* process   = malloc (sizeof (Process));
+      Process* process = malloc (sizeof (Process));
       if (process == NULL)
       {
          set_error ("process malloc");

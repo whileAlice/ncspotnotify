@@ -9,6 +9,7 @@
 
 #include <errno.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,16 +72,12 @@ main (int argv, char** argc)
       goto error_exit;
    }
 
-   // sigset_t signal_set;
-   // int      received_signal;
+   sigemptyset (&ctx->signal_set);
 
-   // sigemptyset (&signal_set);
+   sigaddset (&ctx->signal_set, SIGINT);
+   sigaddset (&ctx->signal_set, SIGTERM);
 
-   // sigaddset (&signal_set, SIGINT);
-   // sigaddset (&signal_set, SIGTERM);
-   // sigaddset (&signal_set, SIGUSR1);
-
-   // pthread_sigmask (SIG_BLOCK, &signal_set, NULL);
+   sigprocmask (SIG_BLOCK, &ctx->signal_set, NULL);
 
    thread_fn* thread_fns     = get_thread_fns ();
    g_thread_ids[MAIN_THREAD] = pthread_self ();
@@ -96,14 +93,11 @@ main (int argv, char** argc)
       }
    }
 
-   // TODO: replace this with cond wait
-   // sigwait (&signal_set, &received_signal);
-
-   // dbg ("received signal: '%s'", strsignal (received_signal));
    IN_LOCK(&g_main_mutex,
    {
       ctx->ready_thread_count += 1;
       g_is_main_waiting        = true;
+      pthread_cond_broadcast (&g_main_cond);
 
       dbg ("waiting for other threads...");
       while ((ctx->ready_thread_count < THREAD_COUNT) && !g_is_failure)

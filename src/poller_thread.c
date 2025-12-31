@@ -6,11 +6,13 @@
 #include "log.h"
 #include "mutex.h"
 #include "socket_messages.h"
+#include "threads.h"
 #include "utils.h"
 
 #include <poll.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/signalfd.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -18,6 +20,7 @@
 enum fds {
    SOCKET_FD = 0,
    PIPE_FD,
+   SIGNAL_FD,
    FD_COUNT,
 };
 
@@ -25,6 +28,24 @@ void*
 poller_thread (void* args)
 {
    Context* ctx = (Context*)args;
+
+   IN_LOCK(&g_main_mutex,
+   {
+      ctx->ready_thread_count += 1;
+      pthread_cond_broadcast (&g_main_cond);
+
+      dbg ("waiting for other threads...");
+      while ((ctx->ready_thread_count < THREAD_COUNT) && !g_is_failure)
+      {
+         pthread_cond_wait (&g_main_cond, &g_main_mutex);
+      }
+
+      if (g_is_failure)
+      {
+         dbg ("fatal failure! quitting...");
+         goto close;
+      }
+   });
 
    struct sockaddr_un socket_address;
 
@@ -46,11 +67,21 @@ poller_thread (void* args)
       goto close;
    }
 
+   int signal_fd = signalfd (-1, &ctx->signal_set, 0);
+   if (signal_fd == -1)
+   {
+      set_error ("signalfd");
+      goto close;
+   }
+
    struct pollfd poll_fds[FD_COUNT];
 
-   poll_fds[SOCKET_FD].fd     = socket_fd;
-   poll_fds[PIPE_FD].fd       = ctx->poller_pipe[0];
-   poll_fds[SOCKET_FD].events = poll_fds[PIPE_FD].events = POLLIN;
+   poll_fds[SOCKET_FD].fd = socket_fd;
+   poll_fds[PIPE_FD].fd   = ctx->poller_pipe[0];
+   poll_fds[SIGNAL_FD].fd = signal_fd;
+
+   for (size_t i = 0; i < FD_COUNT; ++i)
+      poll_fds[i].events = POLLIN;
 
    char buf[MESSAGE_BUFFER_SIZE];
    while (true)
@@ -114,6 +145,26 @@ poller_thread (void* args)
          }
 
          UNREACHABLE ();
+      }
+
+      if (poll_fds[SIGNAL_FD].revents & POLLIN)
+      {
+         struct signalfd_siginfo signal_info;
+
+         ssize_t length =
+           read (poll_fds[SIGNAL_FD].fd, &signal_info, sizeof (signal_info));
+
+         if (length != sizeof (signal_info))
+         {
+            set_error ("read signal");
+            goto close;
+         }
+
+         dbg ("received signal: '%s'", strsignal (signal_info.ssi_signo));
+
+         if (signal_info.ssi_signo == SIGINT ||
+             signal_info.ssi_signo == SIGTERM)
+            goto close;
       }
    }
 

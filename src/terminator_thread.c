@@ -7,6 +7,7 @@
 #include "mutex.h"
 #include "processes.h"
 #include "signal.h"
+#include "threads.h"
 #include "time.h"
 #include "utils.h"
 
@@ -22,6 +23,24 @@ terminator_thread (void* args)
 {
    Context* ctx = (Context*)args;
    assert (ctx->processes != NULL);
+
+   IN_LOCK(&g_main_mutex,
+   {
+      ctx->ready_thread_count += 1;
+      pthread_cond_broadcast (&g_main_cond);
+
+      dbg ("waiting for other threads...");
+      while ((ctx->ready_thread_count < THREAD_COUNT) && !g_is_failure)
+      {
+         pthread_cond_wait (&g_main_cond, &g_main_mutex);
+      }
+
+      if (g_is_failure)
+      {
+         dbg ("fatal failure! quitting...");
+         goto close;
+      }
+   });
 
    while (!ctx->should_quit_app)
    {
