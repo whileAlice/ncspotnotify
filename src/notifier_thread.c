@@ -13,6 +13,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <math.h>
 #include <pthread.h>
 #include <spawn.h>
 #include <stdlib.h>
@@ -96,11 +97,21 @@ notifier_thread (void* args)
          TODO ("add fallback album cover");
       }
 
-      argv[NOTIFICATION_CMD_INDEX]    = strdup (NOTIFICATION_CMD);
-      argv[IMAGE_PATH_SWITCH_INDEX]   = strdup (IMAGE_PATH_SWITCH);
-      argv[COVER_PATH_INDEX]          = cover_path;
-      argv[NOTIFICATION_STRING_INDEX] = notification_to_string (notification);
-      if (argv[NOTIFICATION_STRING_INDEX] == NULL)
+      argv[NOTIFICATION_CMD_INDEX]  = strdup (NOTIFICATION_CMD);
+      argv[IMAGE_PATH_SWITCH_INDEX] = strdup (IMAGE_PATH_SWITCH);
+      argv[COVER_PATH_INDEX]        = cover_path;
+      argv[HINT_SWITCH_INDEX]       = strdup (HINT_SWITCH);
+      argv[PROGRESS_BAR_HINT_INDEX] = get_progress_bar (notification);
+      argv[TOP_NOTIFICATION_STRING_INDEX] =
+        get_top_notification_string (notification);
+      if (argv[TOP_NOTIFICATION_STRING_INDEX] == NULL)
+      {
+         set_error ("notification to string");
+         goto close;
+      }
+      argv[BOTTOM_NOTIFICATION_STRING_INDEX] =
+        get_bottom_notification_string (notification);
+      if (argv[BOTTOM_NOTIFICATION_STRING_INDEX] == NULL)
       {
          set_error ("notification to string");
          goto close;

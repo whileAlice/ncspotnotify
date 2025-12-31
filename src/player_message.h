@@ -24,12 +24,12 @@ typedef struct string_array {
 typedef struct player_mode {
    PlayerState state;
    union {
-      uint32_t secs;
-      uint32_t secs_since_epoch;
+      uint64_t secs;
+      uint64_t secs_since_epoch;
    };
    union {
-      uint32_t nanos;
-      uint32_t nanos_since_epoch;
+      uint64_t nanos;
+      uint64_t nanos_since_epoch;
    };
 } PlayerMode;
 

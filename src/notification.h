@@ -18,7 +18,10 @@ typedef struct notification {
 // clang-format off
 Notification* player_message_to_notification (PlayerMessage* message);
 void          notification_free              (Notification* n);
-char*         notification_to_string         (Notification* n);
+// TODO: unify both gets
+char*         get_top_notification_string    (Notification* n);
+char*         get_bottom_notification_string (Notification* n);
+char*         get_progress_bar               (Notification* n);
 char*         get_state_symbol               (PlayerState state);
 char*         artists_to_string              (StringArray artists);
 // TODO: think about cleaning the cover cache

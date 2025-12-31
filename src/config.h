@@ -1,10 +1,16 @@
 #pragma once
 
 #define MESSAGE_BUFFER_SIZE 2048
-// the format is: <state> <artists> - <track> (<album>)
-#define NOTIFICATION_FORMAT "%s %s - %s (%s)"
+// TODO: split into three strings and configure in dunstrc
+// <title>
+#define NOTIFICATION_TOP    "%s"
+// <artists>\n<i><album></i>
+#define NOTIFICATION_BOTTOM "%s\n<i>%s</i>"
 #define NOTIFICATION_CMD    "dunstify"
 #define IMAGE_PATH_SWITCH   "-I"
+#define HINT_SWITCH         "-h"
+// TODO: make it switchable (turn off if 0%?)
+#define PROGRESS_BAR_HINT   "int:value:%d"
 #define UNKNOWN_ARTIST      "Unknown Artist"
 // TODO: respect $XDG_CACHE_HOME
 #define CACHE_DIR           ".cache"

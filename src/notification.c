@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <curl/curl.h>
 #include <errno.h>
+#include <math.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,6 +33,9 @@ player_message_to_notification (PlayerMessage* message)
    n->title     = strdup (message->playable->title);
    n->album     = strdup (message->playable->album);
    n->cover_url = strdup (message->playable->cover_url);
+   n->current_time_s =
+     (uint32_t)(time (NULL) - message->mode->secs_since_epoch);
+   n->total_time_s = (uint32_t)(round (message->playable->duration / 1000.0));
 
    return n;
 }
@@ -50,12 +55,11 @@ notification_free (Notification* n)
 }
 
 char*
-notification_to_string (Notification* n)
+get_top_notification_string (Notification* n)
 {
    char* state = get_state_symbol (n->state);
 
-   int length = snprintf (NULL, 0, NOTIFICATION_FORMAT, state, n->artists,
-                          n->title, n->album);
+   int length = snprintf (NULL, 0, NOTIFICATION_TOP, n->title);
    if (length == -1)
    {
       set_error ("snprintf [1]");
@@ -69,14 +73,71 @@ notification_to_string (Notification* n)
       return NULL;
    }
 
-   if (snprintf (str, MESSAGE_BUFFER_SIZE, NOTIFICATION_FORMAT, state,
-                 n->artists, n->title, n->album) == -1)
+   if (snprintf (str, length + 1, NOTIFICATION_TOP, n->title) == -1)
    {
       set_error ("snprintf [2]");
       return NULL;
    }
 
    free (state);
+
+   return str;
+}
+
+char*
+get_bottom_notification_string (Notification* n)
+{
+   int length = snprintf (NULL, 0, NOTIFICATION_BOTTOM, n->artists, n->album);
+   if (length == -1)
+   {
+      set_error ("snprintf [1]");
+      return NULL;
+   }
+
+   char* str = malloc (length * sizeof (char) + 1);
+   if (str == NULL)
+   {
+      set_error ("malloc");
+      return NULL;
+   }
+
+   if (snprintf (str, length + 1, NOTIFICATION_BOTTOM, n->artists, n->album) ==
+       -1)
+   {
+      set_error ("snprintf [2]");
+      return NULL;
+   }
+
+   return str;
+}
+
+char*
+get_progress_bar (Notification* n)
+{
+   uint32_t progress = (uint32_t)round (
+     (double)n->current_time_s / (double)n->total_time_s * 100.0);
+
+   int length = snprintf (NULL, 0, PROGRESS_BAR_HINT, progress);
+   if (length == -1)
+   {
+      set_error ("snprintf [1]");
+      return NULL;
+   }
+
+   char* str = malloc (length * sizeof (char) + 1);
+   if (str == NULL)
+   {
+      set_error ("malloc");
+      return NULL;
+   }
+
+   if (snprintf (str, length + 1, PROGRESS_BAR_HINT, progress) == -1)
+   {
+      set_error ("snprintf [2]");
+      return NULL;
+   }
+
+   dbg (str);
 
    return str;
 }
