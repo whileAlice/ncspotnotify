@@ -2,14 +2,17 @@
 
 #include "config.h"
 #include "error.h"
+#include "log.h"
 #include "player_message.h"
+#include "utils.h"
 
 #include <assert.h>
+#include <curl/curl.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define UNKNOWN_ARTIST "Unknown Artist"
+#include <sys/stat.h>
 
 Notification*
 player_message_to_notification (PlayerMessage* message)
@@ -23,12 +26,27 @@ player_message_to_notification (PlayerMessage* message)
       return NULL;
    }
 
-   n->state   = message->mode->state;
-   n->artists = artists_to_string (message->playable->artists);
-   n->title   = strdup (message->playable->title);
-   n->album   = strdup (message->playable->album);
+   n->state     = message->mode->state;
+   n->artists   = artists_to_string (message->playable->artists);
+   n->title     = strdup (message->playable->title);
+   n->album     = strdup (message->playable->album);
+   n->cover_url = strdup (message->playable->cover_url);
 
    return n;
+}
+
+void
+notification_free (Notification* n)
+{
+   if (n == NULL)
+      return;
+
+   free (n->artists);
+   free (n->title);
+   free (n->album);
+   free (n->cover_url);
+
+   free (n);
 }
 
 char*
@@ -124,4 +142,96 @@ artists_to_string (StringArray artists)
    }
 
    return str;
+}
+
+char*
+download_cover (char* cover_url)
+{
+   const char* home = getenv ("HOME");
+   if (home == NULL)
+   {
+      msg ("$HOME variable not found, cannot download cover");
+      errno = ENOENT;
+      return NULL;
+   }
+
+   char* filename = get_random_filename (FILENAME_LENGTH);
+   int   path_len = snprintf (NULL, 0, COVER_PATH_MASK, home, CACHE_DIR,
+                              NCSPOTNOTIFY_DIR, filename, COVER_EXTENSION);
+   if (path_len == -1)
+   {
+      set_error ("snprintf [1]");
+      return NULL;
+   }
+
+   char* path_str = malloc (path_len * sizeof (char) + 1);
+   if (path_str == NULL)
+   {
+      set_error ("malloc");
+      return NULL;
+   }
+
+   if (snprintf (path_str, path_len + 1, "%s/%s", home, CACHE_DIR) == -1)
+   {
+      set_error ("snprintf [2]");
+      return NULL;
+   }
+
+   mode_t mode = 0755;
+
+   if (mkdir (path_str, mode) != 0 && errno != EEXIST)
+   {
+      set_error ("mkdir [1]");
+      return NULL;
+   }
+   errno = 0;
+
+   strcat (path_str, "/");
+   strcat (path_str, NCSPOTNOTIFY_DIR);
+
+   if (mkdir (path_str, mode) != 0 && errno != EEXIST)
+   {
+      set_error ("mkdir [2]");
+      return NULL;
+   }
+   errno = 0;
+
+   CURL* curl = curl_easy_init ();
+   if (curl == NULL)
+   {
+      set_error ("curl easy init");
+      return NULL;
+   }
+
+   if (snprintf (path_str, path_len + 1, COVER_PATH_MASK, home, CACHE_DIR,
+                 NCSPOTNOTIFY_DIR, filename, COVER_EXTENSION) == -1)
+   {
+      set_error ("snprintf [3]");
+      return NULL;
+   }
+
+   FILE* output_file = fopen (path_str, "wb");
+   if (output_file == NULL)
+   {
+      set_error ("fopen");
+      curl_easy_cleanup (curl);
+      return NULL;
+   }
+
+   curl_easy_setopt (curl, CURLOPT_URL, cover_url);
+   curl_easy_setopt (curl, CURLOPT_WRITEFUNCTION, fwrite);
+   curl_easy_setopt (curl, CURLOPT_WRITEDATA, output_file);
+
+   CURLcode res = curl_easy_perform (curl);
+   if (res != CURLE_OK)
+   {
+      set_error ("curl easy perform: %s", curl_easy_strerror (res));
+      return NULL;
+   }
+
+   free (filename);
+   fclose (output_file);
+   curl_easy_cleanup (curl);
+
+   return path_str;
 }

@@ -126,9 +126,6 @@ set_error_exit:
    if (!g_is_main_waiting)
       abort ();
 
-   g_should_quit_app = true;
-   pthread_cond_broadcast (&g_main_cond);
-
    pthread_mutex_unlock (&g_mutex);
 }
 

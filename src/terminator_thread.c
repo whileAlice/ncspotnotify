@@ -90,6 +90,7 @@ terminator_thread (void* args)
       if (res == -1 && errno == ECHILD)
       {
          dbg ("process with pid %d not found", process->pid);
+         errno = 0;
          goto free;
       }
 
@@ -108,9 +109,19 @@ terminator_thread (void* args)
          goto free;
       }
 
-      UNREACHABLE ();
+      if (res == -1)
+      {
+         set_error ("waitpid");
+         goto close;
+      }
 
    free:
+      if (remove (process->argv[COVER_PATH_INDEX]) == -1)
+      {
+         set_error ("remove");
+         goto close;
+      }
+
       process_free (process);
    }
 

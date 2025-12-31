@@ -7,15 +7,16 @@
 #include "mutex.h"
 #include "notification.h"
 #include "notifications.h"
+#include "processes.h"
 #include "threads.h"
+#include "utils.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <pthread.h>
 #include <spawn.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define ARGC 3
 
 extern char** environ;
 
@@ -83,16 +84,28 @@ notifier_thread (void* args)
          goto close;
       }
 
-      argv[0] = strdup (NOTIFICATION_CMD);
-      argv[1] = notification_to_string (notification);
-      if (argv[1] == NULL)
+      // TODO: create a cover cache and reuse covers
+      char* cover_path = download_cover (notification->cover_url);
+      if (cover_path == NULL)
+      {
+         if (errno == ENOENT)
+            errno = 0;
+         else
+            msg ("cannot download album cover");
+
+         TODO ("add fallback album cover");
+      }
+
+      argv[NOTIFICATION_CMD_INDEX]    = strdup (NOTIFICATION_CMD);
+      argv[IMAGE_PATH_SWITCH_INDEX]   = strdup (IMAGE_PATH_SWITCH);
+      argv[COVER_PATH_INDEX]          = cover_path;
+      argv[NOTIFICATION_STRING_INDEX] = notification_to_string (notification);
+      if (argv[NOTIFICATION_STRING_INDEX] == NULL)
       {
          set_error ("notification to string");
          goto close;
       }
-      argv[2] = NULL;
-
-      notification_free (notification);
+      argv[NULL_INDEX] = NULL;
 
       if (posix_spawnp (&child_pid, NOTIFICATION_CMD, NULL, NULL, argv,
                         environ) != 0)
@@ -115,7 +128,7 @@ notifier_thread (void* args)
 
       IN_LOCK (&g_mutex,
       {
-         // takes ownership of process
+         // takes ownership of process/argv
          if (processes_enqueue (ctx->processes, process) == -1)
          {
             set_error ("processes enqueue");
@@ -124,6 +137,8 @@ notifier_thread (void* args)
          }
          pthread_cond_broadcast (&ctx->terminator_cond);
       });
+
+      notification_free (notification);
    }
 
 close:

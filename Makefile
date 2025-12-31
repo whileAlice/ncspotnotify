@@ -6,18 +6,20 @@ BINDIR  = bin
 BIN = ${BINDIR}/${APPNAME}
 SRC = ${wildcard ${SRCDIR}/*.c}
 OBJ = ${SRC:.c=.o}
+LNK = -lcurl
 
 CC = clang
 # TODO: verify if any of this is redundant
 CFLAGS = -Wall -Wextra -Wconversion -Wdouble-promotion \
          -Wno-unused-parameter -Wno-unused-function -Wno-sign-conversion \
          -fsanitize=undefined -fsanitize-trap -std=c23 \
-         -D_POSIX_C_SOURCE=200809L -g
+         -D_POSIX_C_SOURCE=200809L
 
 ${BIN}: ${OBJ}
 	mkdir -p ${BINDIR}
-	${CC} -o ${BIN} ${OBJ}
+	${CC} -o ${BIN} ${OBJ} ${LNK}
 
+run: CFLAGS += -g
 run: ${BIN}
 	${BIN} --debug
 

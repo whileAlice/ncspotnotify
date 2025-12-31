@@ -148,7 +148,10 @@ poller_thread (void* args)
             goto close;
          }
 
-         UNREACHABLE ();
+         if (buf[0] == 0)
+            dbg ("poller pipe received 0");
+         else
+            UNREACHABLE ();
       }
 
       if (poll_fds[SIGNAL_FD].revents & POLLIN)
