@@ -1,8 +1,8 @@
 #include "threads.h"
 
 #include "notifier_thread.h"
+#include "poller_thread.h"
 #include "processor_thread.h"
-#include "socket_reader_thread.h"
 #include "terminator_thread.h"
 
 #include <assert.h>
@@ -14,18 +14,18 @@ pthread_t       g_thread_ids[THREAD_COUNT];
 bool            g_is_main_waiting;
 
 static thread_fn s_thread_fns[THREAD_COUNT] = {
-   [SOCKET_READER_THREAD] = socket_reader_thread,
-   [PROCESSOR_THREAD]     = processor_thread,
-   [NOTIFIER_THREAD]      = notifier_thread,
-   [TERMINATOR_THREAD]    = terminator_thread,
+   [POLLER_THREAD]     = poller_thread,
+   [PROCESSOR_THREAD]  = processor_thread,
+   [NOTIFIER_THREAD]   = notifier_thread,
+   [TERMINATOR_THREAD] = terminator_thread,
 };
 
 static const char* s_thread_names[THREAD_COUNT] = {
-   [MAIN_THREAD]          = "main",
-   [SOCKET_READER_THREAD] = "socket reader",
-   [PROCESSOR_THREAD]     = "processor",
-   [NOTIFIER_THREAD]      = "notifier",
-   [TERMINATOR_THREAD]    = "terminator",
+   [MAIN_THREAD]       = "main",
+   [POLLER_THREAD]     = "poller",
+   [PROCESSOR_THREAD]  = "processor",
+   [NOTIFIER_THREAD]   = "notifier",
+   [TERMINATOR_THREAD] = "terminator",
 };
 
 static const char* s_cond_names[COND_COUNT] = {
@@ -45,8 +45,8 @@ const char*
 thread_id_to_name (pthread_t thread_id)
 {
    for (size_t i = 0; i < THREAD_COUNT; ++i)
-      if pthread_equal(g_thread_ids[i], thread_id)
-         return get_thread_name((ThreadIdx)i);
+      if pthread_equal (g_thread_ids[i], thread_id)
+         return get_thread_name ((ThreadIdx)i);
 
    return NULL;
 }

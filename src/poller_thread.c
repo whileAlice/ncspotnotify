@@ -1,4 +1,4 @@
-#include "socket_reader_thread.h"
+#include "poller_thread.h"
 
 #include "config.h"
 #include "context.h"
@@ -22,7 +22,7 @@ enum fds {
 };
 
 void*
-socket_reader_thread (void* args)
+poller_thread (void* args)
 {
    Context* ctx = (Context*)args;
 
@@ -49,13 +49,13 @@ socket_reader_thread (void* args)
    struct pollfd poll_fds[FD_COUNT];
 
    poll_fds[SOCKET_FD].fd     = socket_fd;
-   poll_fds[PIPE_FD].fd       = ctx->reader_pipe[0];
+   poll_fds[PIPE_FD].fd       = ctx->poller_pipe[0];
    poll_fds[SOCKET_FD].events = poll_fds[PIPE_FD].events = POLLIN;
 
    char buf[MESSAGE_BUFFER_SIZE];
    while (true)
    {
-      dbg ("socket reader waiting for socket");
+      dbg ("waiting for socket...");
 
       if (poll (poll_fds, FD_COUNT, -1) == -1)
       {
@@ -109,7 +109,7 @@ socket_reader_thread (void* args)
 
          if (length == 0)
          {
-            set_error ("reader pipe closed prematurely");
+            set_error ("poller pipe closed prematurely");
             goto close;
          }
 
@@ -121,7 +121,7 @@ socket_reader_thread (void* args)
       set_error ("socket close");
 
 close:
-   dbg ("closing socket reader gracefully");
+   dbg ("closing poller gracefully");
 
    // TODO: change this to cond broadcast
    if (has_thread_error (pthread_self ()))

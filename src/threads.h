@@ -4,7 +4,7 @@ typedef void* (*thread_fn) (void* args);
 
 typedef enum thread_pos {
    MAIN_THREAD,
-   SOCKET_READER_THREAD,
+   POLLER_THREAD,
    PROCESSOR_THREAD,
    NOTIFIER_THREAD,
    TERMINATOR_THREAD,

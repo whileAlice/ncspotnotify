@@ -9,7 +9,6 @@
 
 #include <errno.h>
 #include <pthread.h>
-#include <signal.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -65,9 +64,10 @@ main (int argv, char** argc)
       goto error_exit;
    }
 
-   if (pipe (ctx->reader_pipe) == -1)
+   if (pipe (ctx->poller_pipe) == -1)
    {
-      set_error ("reader pipe create");
+      set_error ("poller pipe create");
+
       goto error_exit;
    }
 
@@ -135,9 +135,9 @@ main (int argv, char** argc)
    // wake up threads
    const uint8_t byte = 0;
 
-   if (write (ctx->reader_pipe[1], &byte, 1) != 1)
+   if (write (ctx->poller_pipe[1], &byte, 1) != 1)
    {
-      set_error ("reader pipe write");
+      set_error ("poller pipe write");
       goto error_exit;
    }
 
@@ -157,14 +157,14 @@ main (int argv, char** argc)
       }
    }
 
-   if (close (ctx->reader_pipe[0]) == -1)
+   if (close (ctx->poller_pipe[0]) == -1)
    {
-      set_error ("reader pipe read end close");
+      set_error ("poller pipe read end close");
       goto error_exit;
    }
-   if (close (ctx->reader_pipe[1]) == -1)
+   if (close (ctx->poller_pipe[1]) == -1)
    {
-      set_error ("reader pipe write end close");
+      set_error ("poller pipe write end close");
       goto error_exit;
    }
 
