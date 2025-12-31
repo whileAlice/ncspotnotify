@@ -2,6 +2,8 @@
 
 #include <pthread.h>
 
+extern bool g_is_failure;
+
 typedef struct error_node {
    char*              message;
    struct error_node* next;

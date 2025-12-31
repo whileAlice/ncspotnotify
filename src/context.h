@@ -8,6 +8,7 @@
 
 typedef struct context {
    pthread_mutex_t mutex;
+   size_t          ready_thread_count;
    int             reader_pipe[2];
    pthread_cond_t  processor_cond;
    pthread_cond_t  notifier_cond;

@@ -15,8 +15,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#define COND_COUNT 4
-
 int
 main (int argv, char** argc)
 {
@@ -73,35 +71,62 @@ main (int argv, char** argc)
       goto error_exit;
    }
 
-   sigset_t signal_set;
-   int      received_signal;
+   // sigset_t signal_set;
+   // int      received_signal;
 
-   sigemptyset (&signal_set);
+   // sigemptyset (&signal_set);
 
-   sigaddset (&signal_set, SIGINT);
-   sigaddset (&signal_set, SIGTERM);
-   sigaddset (&signal_set, SIGUSR1);
+   // sigaddset (&signal_set, SIGINT);
+   // sigaddset (&signal_set, SIGTERM);
+   // sigaddset (&signal_set, SIGUSR1);
 
-   pthread_sigmask (SIG_BLOCK, &signal_set, NULL);
+   // pthread_sigmask (SIG_BLOCK, &signal_set, NULL);
 
-   thread_fn* thread_fns               = get_thread_fns ();
-   pthread_t  thread_ids[THREAD_COUNT] = { 0 };
+   thread_fn* thread_fns     = get_thread_fns ();
+   g_thread_ids[MAIN_THREAD] = pthread_self ();
 
-   for (size_t i = 0; i < THREAD_COUNT; ++i)
+   for (size_t i = MAIN_THREAD + 1; i < THREAD_COUNT; ++i)
    {
-      errno = pthread_create (&thread_ids[i], NULL, thread_fns[i], (void*)ctx);
+      errno =
+        pthread_create (&g_thread_ids[i], NULL, thread_fns[i], (void*)ctx);
       if (errno != 0)
       {
-         set_error ("pthread create %s", get_thread_name ((ThreadId)i));
+         set_error ("pthread create %s", get_thread_name ((ThreadIdx)i));
          goto error_exit;
       }
    }
 
    // TODO: replace this with cond wait
-   sigwait (&signal_set, &received_signal);
+   // sigwait (&signal_set, &received_signal);
 
-   dbg ("received signal: '%s'", strsignal (received_signal));
-   msg ("exiting app");
+   // dbg ("received signal: '%s'", strsignal (received_signal));
+   IN_LOCK(&g_main_mutex,
+   {
+      ctx->ready_thread_count += 1;
+      g_is_main_waiting        = true;
+
+      dbg ("waiting for other threads...");
+      while ((ctx->ready_thread_count < THREAD_COUNT) && !g_is_failure)
+      {
+         pthread_cond_wait (&g_main_cond, &g_main_mutex);
+      }
+   });
+
+   if (g_is_failure)
+   {
+      dbg ("fatal failure! quitting...");
+      goto error_exit;
+   }
+
+   dbg ("all threads ready!");
+
+   IN_LOCK(&g_main_mutex,
+   {
+      while (g_is_failure == false)
+      {
+         pthread_cond_wait (&g_main_cond, &g_main_mutex);
+      }
+   });
 
    IN_LOCK (&ctx->mutex,
       ctx->should_quit_app = true;
@@ -118,15 +143,16 @@ main (int argv, char** argc)
 
    IN_LOCK (&ctx->mutex,
    {
+
       for (size_t i = 0; i < COND_COUNT; ++i)
          pthread_cond_broadcast (conds[i]);
    });
 
-   for (size_t i = 0; i < THREAD_COUNT; ++i)
+   for (size_t i = MAIN_THREAD + 1; i < THREAD_COUNT; ++i)
    {
-      if (pthread_join (thread_ids[i], NULL) != 0)
+      if (pthread_join (g_thread_ids[i], NULL) != 0)
       {
-         set_error ("pthread join %s", get_thread_name ((ThreadId)i));
+         set_error ("pthread join %s", get_thread_name ((ThreadIdx)i));
          goto error_exit;
       }
    }
@@ -142,12 +168,12 @@ main (int argv, char** argc)
       goto error_exit;
    }
 
-   for (int i = 0; i < THREAD_COUNT; ++i)
+   for (int i = 0; i < COND_COUNT; ++i)
    {
       errno = pthread_cond_destroy (conds[i]);
       if (errno != 0)
       {
-         set_error ("pthread cond destroy %s", get_cond_name ((CondId)i));
+         set_error ("pthread cond destroy %s", get_cond_name ((CondIdx)i));
          goto error_exit;
       }
    }
@@ -168,10 +194,9 @@ main (int argv, char** argc)
 error_exit:
    if (has_error ())
    {
-      print_error (pthread_self (), "main");
       for (size_t i = 0; i < THREAD_COUNT; ++i)
       {
-         print_error (thread_ids[i], get_thread_name ((ThreadId)i));
+         print_error (g_thread_ids[i], get_thread_name ((ThreadIdx)i));
       }
 
       return EXIT_FAILURE;

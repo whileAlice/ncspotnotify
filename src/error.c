@@ -12,6 +12,8 @@
 
 static Error* s_errors_head = NULL;
 
+bool g_is_failure;
+
 void
 deinit_errors (void)
 {
@@ -45,6 +47,9 @@ deinit_messages (ErrorNode* error_node)
 void
 set_error (const char* fmt, ...)
 {
+   if (g_is_failure)
+      return;
+
    pthread_mutex_lock (&g_main_mutex);
 
    va_list args1, args2;
@@ -86,7 +91,7 @@ set_error (const char* fmt, ...)
 
    while (current_error != NULL)
    {
-      if (current_error->tid == tid)
+      if (pthread_equal (current_error->tid, tid))
       {
          thread_error = current_error;
          break;
@@ -120,8 +125,11 @@ set_error (const char* fmt, ...)
    thread_error->head      = new_error_head;
 
 set_error_exit:
-   g_should_exit = true;
-   pthread_cond_signal (&g_main_cond);
+   if (!g_is_main_waiting)
+      abort ();
+
+   g_is_failure = true;
+   pthread_cond_broadcast (&g_main_cond);
 
    pthread_mutex_unlock (&g_main_mutex);
 }
@@ -134,7 +142,7 @@ print_error (pthread_t tid, const char* thread_name)
 
    while (current != NULL)
    {
-      if (current->tid == tid)
+      if (pthread_equal (current->tid, tid))
       {
          found = current;
          break;
@@ -188,9 +196,10 @@ has_thread_error (pthread_t tid)
 
    while (current != NULL)
    {
-      if (current->tid == tid) return true;
+      if (pthread_equal (current->tid, tid))
+         return true;
 
-      next = current->next;
+      next    = current->next;
       current = next;
    }
 

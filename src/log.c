@@ -2,9 +2,14 @@
 
 #include "config.h"
 #include "error.h"
+#include "threads.h"
 
+#include <ctype.h>
+#include <pthread.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static Verbosity s_verbosity = QUIET;
@@ -21,22 +26,33 @@ dbg (const char* fmt, ...)
    if (s_verbosity < DEBUG)
       return;
 
-   char        buf[MESSAGE_BUFFER_SIZE];
-   const char* prefix = "DBG: ";
+   char* thread_name = strdup (thread_id_to_name (pthread_self ()));
+   for (char* pos = thread_name; *pos != '\0'; ++pos)
+      *pos = (char)toupper (*pos);
 
-   memcpy (buf, prefix, strlen (prefix));
+   char        buf[MESSAGE_BUFFER_SIZE];
+   const char* prefix[] = { "DBG: ", "[", thread_name, "] " };
+
+   ptrdiff_t offset = 0;
+   for (size_t i = 0; i < sizeof (prefix) / sizeof (prefix[0]); ++i)
+   {
+      memcpy (buf + offset, prefix[i], strlen (prefix[i]));
+      offset += strlen (prefix[i]);
+   }
 
    va_list args;
    va_start (args, fmt);
 
    // TODO: think about how to propagate these errors
-   if (vsnprintf (&buf[strlen (prefix)], MESSAGE_BUFFER_SIZE, fmt, args) < 0)
+   if (vsnprintf (&buf[offset], MESSAGE_BUFFER_SIZE, fmt, args) < 0)
       set_error ("vsnprintf");
 
    if (puts (buf) == EOF)
       set_error ("puts");
 
    va_end (args);
+
+   free (thread_name);
 }
 
 void
